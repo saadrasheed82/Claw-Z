@@ -1,0 +1,57 @@
+# Agent Runner Analysis: Tool Execution & Streaming
+
+This document provides a technical overview of how the OpenClaw agent runner (specifically the [runEmbeddedAttempt](file:///c:/saadrasheedwork/calwz/onopenclaw/openclaw/src/agents/pi-embedded-runner/run/attempt.ts#656-1869) function) orchestrates tool calls, handles LLM streaming, and reports progress.
+
+## Overview
+The agent runner is responsible for managing a single "attempt" of an agent's execution. It initializes the environment, manages the conversation history (session), and interacts with the LLM via the `pi-agent-core` library.
+
+## 1. Tool Execution Lifecycle
+The core loop of the agent (Assistant Turn -> Tool Use -> Tool Result -> Next Assistant Turn) is managed by `AgentSession` from `@mariozechner/pi-agent-core`. The runner hooks into this loop via a subscription mechanism.
+
+### Key Components:
+- **[runEmbeddedAttempt](file:///c:/saadrasheedwork/calwz/onopenclaw/openclaw/src/agents/pi-embedded-runner/run/attempt.ts#656-1869) ([src/agents/pi-embedded-runner/run/attempt.ts](file:///c:/saadrasheedwork/calwz/onopenclaw/openclaw/src/agents/pi-embedded-runner/run/attempt.ts))**:
+  - Sets up the `AgentSession`.
+  - Configures the [streamFn](file:///c:/saadrasheedwork/calwz/onopenclaw/openclaw/src/agents/pi-embedded-runner/run/attempt.ts#1191-1207) (which handles the actual LLM API calls).
+  - Initializes a `subscription` via [subscribeEmbeddedPiSession](file:///c:/saadrasheedwork/calwz/onopenclaw/openclaw/src/agents/pi-embedded-subscribe.ts#34-712).
+- **[handleToolExecutionStart](file:///c:/saadrasheedwork/calwz/onopenclaw/openclaw/src/agents/pi-embedded-subscribe.handlers.tools.ts#180-271) ([src/agents/pi-embedded-subscribe.handlers.tools.ts](file:///c:/saadrasheedwork/calwz/onopenclaw/openclaw/src/agents/pi-embedded-subscribe.handlers.tools.ts))**:
+  - **Pre-execution**: Flushes pending block replies to the UI to ensure the agent's message appears before the tool output.
+  - **Event Emission**: Emits a `tool:start` event.
+  - **Metadata Tracking**: Records tool name and arguments for later use in hooks and summaries.
+- **[handleToolExecutionEnd](file:///c:/saadrasheedwork/calwz/onopenclaw/openclaw/src/agents/pi-embedded-subscribe.handlers.tools.ts#304-459) ([src/agents/pi-embedded-subscribe.handlers.tools.ts](file:///c:/saadrasheedwork/calwz/onopenclaw/openclaw/src/agents/pi-embedded-subscribe.handlers.tools.ts))**:
+  - **Result Processing**: Captures the tool's output and sanitizes it for the session history.
+  - **Event Emission**: Emits a `tool:result` event with the outcome (success/error).
+  - **Plugin Hooks**: Triggers the `after_tool_call` plugin hook, allowing external logic to react to the tool's result.
+
+## 2. LLM Streaming & Filtering
+OpenClaw implements a sophisticated filtering layer above the raw LLM stream to manage "thinking" vs. "final" content.
+
+### The Streaming Pipeline:
+1.  **Raw Stream**: The [streamFn](file:///c:/saadrasheedwork/calwz/onopenclaw/openclaw/src/agents/pi-embedded-runner/run/attempt.ts#1191-1207) (e.g., `streamSimple`) receives chunks from the LLM.
+2.  **Tag Detection**: [pi-embedded-subscribe.ts](file:///c:/saadrasheedwork/calwz/onopenclaw/openclaw/src/agents/pi-embedded-subscribe.ts) uses regexes to monitor for `<think>` and `<final>` tags.
+3.  **Content Separation**:
+    - **Reasoning/Thinking**: Content inside `<think>` tags is captured and reported via `onReasoningStream`. It is **stripped** from the main assistant message text.
+    - **Final Answer**: If `enforceFinalTag` is enabled, only content inside `<final>` tags is considered for the assistant's reply.
+4.  **Chunking**: The `EmbeddedBlockChunker` buffers text to avoid sending fragmented sentences to the UI, ensuring smooth rendering.
+
+## 3. Progress Reporting Mechanisms
+Progress is reported in real-time through a set of callbacks passed to the runner:
+
+| Callback | Purpose |
+| :--- | :--- |
+| `onPartialReply` | Streams the "cleaned" assistant text as it comes in. |
+| `onBlockReply` | Sends complete paragraphs/blocks of text to the UI. |
+| `onToolResult` | Reports tool outcomes and any associated media (images/videos). |
+| `onReasoningStream` | Streams the content found inside `<think>` blocks. |
+| `onAgentEvent` | Low-level event stream (tool phases, message boundaries). |
+
+## 4. Design Patterns to Note
+- **Implicit Tool Summaries**: The runner automatically generates human-readable summaries for certain tool calls (like "Read file X" or "Executed bash command") to keep the user informed without showing raw JSON payloads (unless requested).
+- **Messaging Tool Suppression**: If a tool like `slack` or `discord` sends a message, the runner tracks the sent text to prevent the agent from repeating "I've sent the message" if the tool result already implies it.
+- **Context Management (Compaction)**: When history gets too long, the runner triggers "compaction" to summarize or prune history turns while a tool result is pending.
+
+---
+**Files Analyzed:**
+- [src/agents/pi-embedded-runner/run/attempt.ts](file:///c:/saadrasheedwork/calwz/onopenclaw/openclaw/src/agents/pi-embedded-runner/run/attempt.ts)
+- [src/agents/pi-embedded-subscribe.ts](file:///c:/saadrasheedwork/calwz/onopenclaw/openclaw/src/agents/pi-embedded-subscribe.ts)
+- [src/agents/pi-embedded-subscribe.handlers.tools.ts](file:///c:/saadrasheedwork/calwz/onopenclaw/openclaw/src/agents/pi-embedded-subscribe.handlers.tools.ts)
+- [src/agents/pi-embedded-subscribe.handlers.messages.ts](file:///c:/saadrasheedwork/calwz/onopenclaw/openclaw/src/agents/pi-embedded-subscribe.handlers.messages.ts)

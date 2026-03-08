@@ -142,7 +142,7 @@ const CORE_TOOL_DEFINITIONS: CoreToolDefinition[] = [
     label: "sessions_spawn",
     description: "Spawn sub-agent",
     sectionId: "sessions",
-    profiles: ["coding"],
+    profiles: ["coding", "messaging"],
     includeInOpenClawGroup: true,
   },
   {
@@ -166,7 +166,7 @@ const CORE_TOOL_DEFINITIONS: CoreToolDefinition[] = [
     label: "browser",
     description: "Control web browser",
     sectionId: "ui",
-    profiles: [],
+    profiles: ["messaging"],
     includeInOpenClawGroup: true,
   },
   {
@@ -194,6 +194,14 @@ const CORE_TOOL_DEFINITIONS: CoreToolDefinition[] = [
     includeInOpenClawGroup: true,
   },
   {
+    id: "manage_plan",
+    label: "manage_plan",
+    description: "Manage execution plan and todos",
+    sectionId: "automation",
+    profiles: ["minimal", "coding"],
+    includeInOpenClawGroup: true,
+  },
+  {
     id: "gateway",
     label: "gateway",
     description: "Gateway control",
@@ -215,6 +223,14 @@ const CORE_TOOL_DEFINITIONS: CoreToolDefinition[] = [
     description: "List agents",
     sectionId: "agents",
     profiles: [],
+    includeInOpenClawGroup: true,
+  },
+  {
+    id: "autonomous_browser",
+    label: "autonomous_browser",
+    description: "Run autonomous browsing in a dedicated browser workflow",
+    sectionId: "agents",
+    profiles: ["messaging"],
     includeInOpenClawGroup: true,
   },
   {

@@ -7,6 +7,7 @@ import { renderChatControls, renderTab, renderThemeToggle } from "./app-render.h
 import type { AppViewState } from "./app-view-state.ts";
 import { loadAgentFileContent, loadAgentFiles, saveAgentFile } from "./controllers/agent-files.ts";
 import { loadAgentIdentities, loadAgentIdentity } from "./controllers/agent-identity.ts";
+import { loadAgentPlan } from "./controllers/agent-plan.ts";
 import { loadAgentSkills } from "./controllers/agent-skills.ts";
 import { loadAgents, loadToolsCatalog } from "./controllers/agents.ts";
 import { loadChannels } from "./controllers/channels.ts";
@@ -74,6 +75,7 @@ import { renderConfig } from "./views/config.ts";
 import { renderCron } from "./views/cron.ts";
 import { renderDebug } from "./views/debug.ts";
 import { renderExecApprovalPrompt } from "./views/exec-approval.ts";
+import { renderFiles } from "./views/files.ts";
 import { renderGatewayUrlConfirmation } from "./views/gateway-url-confirmation.ts";
 import { renderInstances } from "./views/instances.ts";
 import { renderLogs } from "./views/logs.ts";
@@ -537,6 +539,22 @@ export function renderApp(state: AppViewState) {
         }
 
         ${
+          state.tab === "files"
+            ? renderFiles({
+                loading: state.filesLoading,
+                error: state.filesError,
+                files: state.filesList,
+                currentPath: state.filesCurrentPath,
+                onRefresh: () => state.loadFiles(),
+                onNavigate: (path) => state.navigateFiles(path),
+                onNavigateUp: () => state.navigateFilesUp(),
+                onCreateFile: (name, isDirectory) => state.createWorkspaceFile(name, isDirectory),
+                onDeleteFile: (path) => state.deleteWorkspaceFile(path),
+              })
+            : nothing
+        }
+
+        ${
           state.tab === "agents"
             ? renderAgents({
                 loading: state.agentsLoading,
@@ -566,6 +584,9 @@ export function renderApp(state: AppViewState) {
                 agentIdentityLoading: state.agentIdentityLoading,
                 agentIdentityError: state.agentIdentityError,
                 agentIdentityById: state.agentIdentityById,
+                agentPlanLoading: state.agentPlanLoading,
+                agentPlanError: state.agentPlanError,
+                agentPlan: state.agentPlan,
                 agentSkillsLoading: state.agentSkillsLoading,
                 agentSkillsReport: state.agentSkillsReport,
                 agentSkillsError: state.agentSkillsError,
@@ -602,6 +623,9 @@ export function renderApp(state: AppViewState) {
                   state.agentSkillsError = null;
                   state.agentSkillsAgentId = null;
                   void loadAgentIdentity(state, agentId);
+                  if (state.agentsPanel === "plan") {
+                    void loadAgentPlan(state, agentId);
+                  }
                   if (state.agentsPanel === "tools") {
                     void loadToolsCatalog(state, agentId);
                   }
@@ -623,6 +647,9 @@ export function renderApp(state: AppViewState) {
                       state.agentFileDrafts = {};
                       void loadAgentFiles(state, resolvedAgentId);
                     }
+                  }
+                  if (panel === "plan" && resolvedAgentId) {
+                    void loadAgentPlan(state, resolvedAgentId);
                   }
                   if (panel === "tools") {
                     void loadToolsCatalog(state, resolvedAgentId);
@@ -723,6 +750,7 @@ export function renderApp(state: AppViewState) {
                 onConfigReload: () => loadConfig(state),
                 onConfigSave: () => saveConfig(state),
                 onChannelsRefresh: () => loadChannels(state, false),
+                onPlanRefresh: (agentId) => loadAgentPlan(state, agentId),
                 onCronRefresh: () => state.loadCron(),
                 onSkillsFilterChange: (next) => (state.skillsFilter = next),
                 onSkillsRefresh: () => {
@@ -1039,6 +1067,11 @@ export function renderApp(state: AppViewState) {
                 error: state.lastError,
                 sessions: state.sessionsResult,
                 focusMode: chatFocus,
+                chatMode: state.chatMode,
+                onChatModeChange: (mode) => {
+                  state.chatMode = mode;
+                },
+                onPlanEvent: (type, rawPlan) => state.handlePlanEvent(type, rawPlan),
                 onRefresh: () => {
                   state.resetToolStream();
                   return Promise.all([loadChatHistory(state), refreshChatAvatar(state)]);

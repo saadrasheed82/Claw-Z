@@ -21,11 +21,8 @@ import { buildSubagentSystemPrompt } from "./subagent-announce.js";
 import { getSubagentDepthFromSessionStore } from "./subagent-depth.js";
 import { countActiveRunsForSession, registerSubagentRun } from "./subagent-registry.js";
 import { readStringParam } from "./tools/common.js";
-import {
-  resolveDisplaySessionKey,
-  resolveInternalSessionKey,
-  resolveMainSessionAlias,
-} from "./tools/sessions-helpers.js";
+import { resolveDisplaySessionKey, resolveInternalSessionKey, resolveMainSessionAlias } from "./tools/sessions-helpers.js";
+import { BROWSER_AGENT_HINT } from "./prompts/browser-agent-hint.js";
 
 export const SUBAGENT_SPAWN_MODES = ["run", "session"] as const;
 export type SpawnSubagentMode = (typeof SUBAGENT_SPAWN_MODES)[number];
@@ -343,7 +340,8 @@ export async function spawnSubagentDirect(
     ctx.requesterAgentIdOverride ?? parseAgentSessionKey(requesterInternalKey)?.agentId,
   );
   const targetAgentId = requestedAgentId ? normalizeAgentId(requestedAgentId) : requesterAgentId;
-  if (targetAgentId !== requesterAgentId) {
+  const isVirtualBrowserAgent = targetAgentId === "browser-agent";
+  if (targetAgentId !== requesterAgentId && !isVirtualBrowserAgent) {
     const allowAgents = resolveAgentConfig(cfg, requesterAgentId)?.subagents?.allowAgents ?? [];
     const allowAny = allowAgents.some((value) => value.trim() === "*");
     const normalizedTargetId = targetAgentId.toLowerCase();
@@ -500,6 +498,10 @@ export async function spawnSubagentDirect(
     childDepth,
     maxSpawnDepth,
   });
+
+  if (targetAgentId === "browser-agent") {
+    childSystemPrompt = `${childSystemPrompt}\n\n${BROWSER_AGENT_HINT}`;
+  }
 
   const attachmentsCfg = (
     cfg as unknown as {

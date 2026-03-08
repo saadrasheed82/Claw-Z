@@ -393,6 +393,23 @@ export type AgentsFilesSetResult = {
   file: AgentFileEntry;
 };
 
+export type AgentsPlanTask = {
+  id: string;
+  title: string;
+  status: "todo" | "in_progress" | "done";
+};
+
+export type AgentsPlan = {
+  summary: string;
+  tasks: AgentsPlanTask[];
+  updatedAt: string;
+};
+
+export type AgentsPlanGetResult = {
+  agentId: string;
+  plan?: AgentsPlan;
+};
+
 export type GatewaySessionRow = {
   key: string;
   kind: "direct" | "group" | "global" | "unknown";

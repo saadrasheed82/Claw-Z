@@ -5,11 +5,13 @@
 /* Chat Group Layout - default (assistant/other on left) */
 .chat-group {
   display: flex;
-  gap: 12px;
+  gap: 16px;
+  /* Increased gap */
   align-items: flex-start;
-  margin-bottom: 16px;
-  margin-left: 4px;
-  margin-right: 16px;
+  margin-bottom: 24px;
+  /* More breathing room */
+  margin-left: 8px;
+  margin-right: 24px;
 }
 
 /* User messages on right */
@@ -21,8 +23,9 @@
 .chat-group-messages {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  max-width: min(900px, calc(100% - 60px));
+  gap: 4px;
+  /* Slightly more gap between bubbles in a group */
+  max-width: min(850px, calc(100% - 80px));
 }
 
 /* User messages align content right */
@@ -81,39 +84,42 @@
   background: rgba(255, 255, 255, 0.02);
 }
 
-/* Avatar Styles */
+/* Avatar Styles - Claude Desktop style */
 .chat-avatar {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  /* Slightly larger */
+  height: 36px;
   border-radius: 8px;
   background: var(--panel-strong);
   display: grid;
   place-items: center;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 13px;
   flex-shrink: 0;
-  align-self: flex-end; /* Align with last message in group */
-  margin-bottom: 4px; /* Optical alignment */
+  align-self: flex-end;
+  margin-bottom: 2px;
+  border: 1px solid var(--border);
 }
 
 .chat-avatar.user {
-  background: var(--accent-subtle);
-  color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
 }
 
 .chat-avatar.assistant {
-  background: var(--secondary);
-  color: var(--muted);
+  background: var(--panel-strong);
+  color: var(--text-strong);
 }
 
 .chat-avatar.other {
-  background: var(--secondary);
+  background: var(--panel-strong);
   color: var(--muted);
 }
 
 .chat-avatar.tool {
-  background: var(--secondary);
-  color: var(--muted);
+  background: var(--panel-strong);
+  color: var(--accent);
 }
 
 /* Image avatar support */
@@ -123,20 +129,23 @@ img.chat-avatar {
   object-position: center;
 }
 
-/* Minimal Bubble Design - dynamic width based on content */
+/* Claude Desktop Style Bubbles */
 .chat-bubble {
   position: relative;
   display: inline-block;
-  border: 1px solid transparent;
-  background: var(--card);
-  border-radius: var(--radius-lg);
-  padding: 10px 14px;
-  box-shadow: none;
-  transition:
-    background 150ms ease-out,
-    border-color 150ms ease-out;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  /* Softer, more conversational radius */
+  padding: 14px 18px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  /* Gentle outer shadow */
   max-width: 100%;
   word-wrap: break-word;
+  transition:
+    background 150ms ease-out,
+    border-color 150ms ease-out,
+    box-shadow 150ms ease-out;
 }
 
 .chat-bubble.has-copy {
@@ -256,16 +265,17 @@ img.chat-avatar {
 /* User bubbles have different styling */
 .chat-group.user .chat-bubble {
   background: var(--accent-subtle);
-  border-color: transparent;
+  border-color: var(--accent);
+  color: var(--text-strong);
 }
 
 :root[data-theme="light"] .chat-group.user .chat-bubble {
-  border-color: rgba(234, 88, 12, 0.2);
-  background: rgba(251, 146, 60, 0.12);
+  border-color: var(--accent);
+  background: var(--accent-subtle);
 }
 
 .chat-group.user .chat-bubble:hover {
-  background: rgba(255, 77, 77, 0.15);
+  background: var(--accent-active, rgba(173, 137, 255, 0.18));
 }
 
 /* Streaming animation */
@@ -274,10 +284,12 @@ img.chat-avatar {
 }
 
 @keyframes pulsing-border {
+
   0%,
   100% {
     border-color: var(--border);
   }
+
   50% {
     border-color: var(--accent);
   }
@@ -293,6 +305,7 @@ img.chat-avatar {
     opacity: 0;
     transform: translateY(4px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);

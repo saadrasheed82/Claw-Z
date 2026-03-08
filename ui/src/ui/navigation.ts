@@ -3,12 +3,23 @@ import type { IconName } from "./icons.js";
 
 export const TAB_GROUPS = [
   { label: "chat", tabs: ["chat"] },
+  { label: "control", tabs: ["overview", "files"] },
   {
-    label: "control",
-    tabs: ["overview", "channels", "instances", "sessions", "usage", "cron"],
+    label: "advanced",
+    tabs: [
+      "channels",
+      "instances",
+      "sessions",
+      "usage",
+      "cron",
+      "agents",
+      "skills",
+      "nodes",
+      "config",
+      "debug",
+      "logs",
+    ],
   },
-  { label: "agent", tabs: ["agents", "skills", "nodes"] },
-  { label: "settings", tabs: ["config", "debug", "logs"] },
 ] as const;
 
 export type Tab =
@@ -19,6 +30,7 @@ export type Tab =
   | "sessions"
   | "usage"
   | "cron"
+  | "files"
   | "skills"
   | "nodes"
   | "chat"
@@ -34,6 +46,7 @@ const TAB_PATHS: Record<Tab, string> = {
   sessions: "/sessions",
   usage: "/usage",
   cron: "/cron",
+  files: "/files",
   skills: "/skills",
   nodes: "/nodes",
   chat: "/chat",
@@ -141,6 +154,8 @@ export function iconForTab(tab: Tab): IconName {
       return "barChart";
     case "cron":
       return "loader";
+    case "files":
+      return "folderOpen";
     case "skills":
       return "zap";
     case "nodes":

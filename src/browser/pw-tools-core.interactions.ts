@@ -382,6 +382,51 @@ export async function scrollIntoViewViaPlaywright(opts: {
   }
 }
 
+export async function scrollViaPlaywright(opts: {
+  cdpUrl: string;
+  targetId?: string;
+  direction: "up" | "down" | "left" | "right";
+  amount?: number | "page";
+  timeoutMs?: number;
+}): Promise<void> {
+  const page = await getRestoredPageForTarget(opts);
+  const timeout = resolveInteractionTimeoutMs(opts.timeoutMs);
+  const direction = opts.direction;
+  const amount = opts.amount ?? "page";
+
+  try {
+    await page.evaluate(
+      (args) => {
+        const { direction, amount } = args;
+        let x = 0;
+        let y = 0;
+        const delta = amount === "page" ? (direction === "up" || direction === "down" ? window.innerHeight * 0.8 : window.innerWidth * 0.8) : Number(amount);
+
+        switch (direction) {
+          case "up":
+            y = -delta;
+            break;
+          case "down":
+            y = delta;
+            break;
+          case "left":
+            x = -delta;
+            break;
+          case "right":
+            x = delta;
+            break;
+        }
+        window.scrollBy({ left: x, top: y, behavior: "smooth" });
+      },
+      { direction, amount },
+    );
+    // Give smooth scroll some time to settle
+    await page.waitForTimeout(500);
+  } catch (err) {
+    throw toAIFriendlyError(err, `viewport scroll ${direction}`);
+  }
+}
+
 export async function waitForViaPlaywright(opts: {
   cdpUrl: string;
   targetId?: string;

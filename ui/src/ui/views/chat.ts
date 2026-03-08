@@ -55,6 +55,10 @@ export type ChatProps = {
   sessions: SessionsListResult | null;
   // Focus mode
   focusMode: boolean;
+  // Chat mode
+  chatMode?: "fast" | "planning";
+  onChatModeChange?: (mode: "fast" | "planning") => void;
+  onPlanEvent?: (type: "proceed" | "modify" | "cancel", rawPlan: string) => void;
   // Sidebar state
   sidebarOpen?: boolean;
   sidebarContent?: string | null;
@@ -162,45 +166,132 @@ function generateAttachmentId(): string {
   return `att-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
-function handlePaste(e: ClipboardEvent, props: ChatProps) {
-  const items = e.clipboardData?.items;
+function processFiles(
+  items: DataTransferItemList | FileList | null | undefined,
+  props: ChatProps,
+  currentDraft: string,
+) {
   if (!items || !props.onAttachmentsChange) {
     return;
   }
 
-  const imageItems: DataTransferItem[] = [];
+  const imageFiles: File[] = [];
+  const textFiles: File[] = [];
+
+  // DataTransferItemList is not iterable via typical array methods, use index
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
-    if (item.type.startsWith("image/")) {
-      imageItems.push(item);
+    let file: File | null = null;
+
+    // For DataTransferItem
+    if ("getAsFile" in item) {
+      file = item.getAsFile();
+    } else {
+      // For File
+      file = item as unknown as File;
+    }
+
+    if (!file) continue;
+
+    if (file.type.startsWith("image/")) {
+      imageFiles.push(file);
+    } else if (
+      file.type.startsWith("text/") ||
+      file.type === "application/json" ||
+      file.name.endsWith(".ts") ||
+      file.name.endsWith(".js") ||
+      file.name.endsWith(".md") ||
+      file.name.endsWith(".html") ||
+      file.name.endsWith(".css")
+    ) {
+      textFiles.push(file);
     }
   }
 
-  if (imageItems.length === 0) {
-    return;
+  // Handle images
+  if (imageFiles.length > 0) {
+    for (const file of imageFiles) {
+      const reader = new FileReader();
+      reader.addEventListener("load", () => {
+        const dataUrl = reader.result as string;
+        const newAttachment: ChatAttachment = {
+          id: generateAttachmentId(),
+          dataUrl,
+          mimeType: file.type,
+        };
+        const current = props.attachments ?? [];
+        props.onAttachmentsChange?.([...current, newAttachment]);
+      });
+      reader.readAsDataURL(file);
+    }
   }
 
+  // Handle text files
+  if (textFiles.length > 0) {
+    let combinedText = currentDraft;
+    if (combinedText && !combinedText.endsWith("\n")) {
+      combinedText += "\n";
+    }
+
+    let processedCount = 0;
+
+    // Process text files sequentially to maintain order and update draft cleanly
+    const processNextTextFile = () => {
+      if (processedCount >= textFiles.length) {
+        if (combinedText !== currentDraft) {
+          props.onDraftChange(combinedText);
+        }
+        return;
+      }
+
+      const file = textFiles[processedCount];
+      const reader = new FileReader();
+      reader.addEventListener("load", () => {
+        const textContent = reader.result as string;
+        // Determine extension for markdown block
+        const extMatch = file.name.match(/\.([^.]+)$/);
+        const ext = extMatch ? extMatch[1] : "";
+
+        combinedText += `\n\`\`\`${ext}\n// ${file.name}\n${textContent}\n\`\`\`\n`;
+        processedCount++;
+        processNextTextFile();
+      });
+      reader.readAsText(file);
+    };
+
+    processNextTextFile();
+  }
+}
+
+function handlePaste(e: ClipboardEvent, props: ChatProps, currentDraft: string) {
+  const items = e.clipboardData?.items;
+  if (!items) return;
+
+  // Check if we actually have files before preventing default.
+  // If it's just text, let the default paste handle it.
+  let hasFiles = false;
+  for (let i = 0; i < items.length; i++) {
+    if (items[i].kind === "file") {
+      hasFiles = true;
+      break;
+    }
+  }
+
+  if (hasFiles) {
+    e.preventDefault();
+    processFiles(items, props, currentDraft);
+  }
+}
+
+function handleDrop(e: DragEvent, props: ChatProps, currentDraft: string) {
+  if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
+    e.preventDefault();
+    processFiles(e.dataTransfer.files as unknown as FileList, props, currentDraft);
+  }
+}
+
+function handleDragOver(e: DragEvent) {
   e.preventDefault();
-
-  for (const item of imageItems) {
-    const file = item.getAsFile();
-    if (!file) {
-      continue;
-    }
-
-    const reader = new FileReader();
-    reader.addEventListener("load", () => {
-      const dataUrl = reader.result as string;
-      const newAttachment: ChatAttachment = {
-        id: generateAttachmentId(),
-        dataUrl,
-        mimeType: file.type,
-      };
-      const current = props.attachments ?? [];
-      props.onAttachmentsChange?.([...current, newAttachment]);
-    });
-    reader.readAsDataURL(file);
-  }
 }
 
 function renderAttachmentPreview(props: ChatProps) {
@@ -240,6 +331,7 @@ function renderAttachmentPreview(props: ChatProps) {
 export function renderChat(props: ChatProps) {
   const canCompose = props.connected;
   const isBusy = props.sending || props.stream !== null;
+  const activeMode = props.chatMode ?? "fast";
   const canAbort = Boolean(props.canAbort && props.onAbort);
   const activeSession = props.sessions?.sessions?.find((row) => row.key === props.sessionKey);
   const reasoningLevel = activeSession?.reasoningLevel ?? "off";
@@ -253,11 +345,12 @@ export function renderChat(props: ChatProps) {
   const composePlaceholder = props.connected
     ? hasAttachments
       ? "Add a message or paste more images..."
-      : "Message (↩ to send, Shift+↩ for line breaks, paste images)"
+      : "Message..."
     : "Connect to the gateway to start chatting…";
 
   const splitRatio = props.splitRatio ?? 0.6;
   const sidebarOpen = Boolean(props.sidebarOpen && props.onCloseSidebar);
+  const queueCountLabel = `${props.queue.length}`;
   const thread = html`
     <div
       class="chat-thread"
@@ -305,6 +398,7 @@ export function renderChat(props: ChatProps) {
               showReasoning,
               assistantName: props.assistantName,
               assistantAvatar: assistantIdentity.avatar,
+              onPlanEvent: props.onPlanEvent,
             });
           }
 
@@ -315,7 +409,7 @@ export function renderChat(props: ChatProps) {
   `;
 
   return html`
-    <section class="card chat">
+    <section class="card chat chat-modern">
       ${props.disabledReason ? html`<div class="callout">${props.disabledReason}</div>` : nothing}
 
       ${props.error ? html`<div class="callout danger">${props.error}</div>` : nothing}
@@ -371,11 +465,19 @@ export function renderChat(props: ChatProps) {
         }
       </div>
 
+      <div class="chat-status-rail" aria-live="polite">
+        ${renderFallbackIndicator(props.fallbackStatus)}
+        ${renderCompactionIndicator(props.compactionStatus)}
+      </div>
+
       ${
         props.queue.length
           ? html`
             <div class="chat-queue" role="status" aria-live="polite">
-              <div class="chat-queue__title">Queued (${props.queue.length})</div>
+              <div class="chat-queue__title">
+                <span>Queued</span>
+                <span class="chat-queue__badge">${queueCountLabel}</span>
+              </div>
               <div class="chat-queue__list">
                 ${props.queue.map(
                   (item) => html`
@@ -403,9 +505,6 @@ export function renderChat(props: ChatProps) {
           : nothing
       }
 
-      ${renderFallbackIndicator(props.fallbackStatus)}
-      ${renderCompactionIndicator(props.compactionStatus)}
-
       ${
         props.showNewMessages
           ? html`
@@ -420,11 +519,30 @@ export function renderChat(props: ChatProps) {
           : nothing
       }
 
-      <div class="chat-compose">
+      <div class="chat-compose chat-compose--modern">
         ${renderAttachmentPreview(props)}
-        <div class="chat-compose__row">
-          <label class="field chat-compose__field">
-            <span>Message</span>
+        <div class="chat-compose__row chat-compose__row--modern">
+          <div class="chat-mode-toggle chat-mode-toggle--inline" role="group" aria-label="Chat mode">
+            <button
+              class="btn chat-mode-toggle__btn ${activeMode === "fast" ? "primary" : ""}"
+              type="button"
+              @click=${() => props.onChatModeChange?.("fast")}
+              aria-pressed=${activeMode === "fast"}
+              title="Fast mode: normal chat behavior"
+            >
+              Fast
+            </button>
+            <button
+              class="btn chat-mode-toggle__btn ${activeMode === "planning" ? "primary" : ""}"
+              type="button"
+              @click=${() => props.onChatModeChange?.("planning")}
+              aria-pressed=${activeMode === "planning"}
+              title="Planning mode: generate plans and todos before execution"
+            >
+              Planning
+            </button>
+          </div>
+          <label class="field chat-compose__field chat-compose__field--modern">
             <textarea
               ${ref((el) => el && adjustTextareaHeight(el as HTMLTextAreaElement))}
               .value=${props.draft}
@@ -453,20 +571,22 @@ export function renderChat(props: ChatProps) {
                 adjustTextareaHeight(target);
                 props.onDraftChange(target.value);
               }}
-              @paste=${(e: ClipboardEvent) => handlePaste(e, props)}
+              @paste=${(e: ClipboardEvent) => handlePaste(e, props, props.draft)}
+              @drop=${(e: DragEvent) => handleDrop(e, props, props.draft)}
+              @dragover=${handleDragOver}
               placeholder=${composePlaceholder}
             ></textarea>
           </label>
-          <div class="chat-compose__actions">
+          <div class="chat-compose__actions chat-compose__actions--modern">
             <button
-              class="btn"
+              class="btn chat-action-btn chat-action-btn--secondary"
               ?disabled=${!props.connected || (!canAbort && props.sending)}
               @click=${canAbort ? props.onAbort : props.onNewSession}
             >
               ${canAbort ? "Stop" : "New session"}
             </button>
             <button
-              class="btn primary"
+              class="btn primary chat-action-btn chat-action-btn--primary"
               ?disabled=${!props.connected}
               @click=${props.onSend}
             >

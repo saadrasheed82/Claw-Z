@@ -126,10 +126,12 @@ export function createSessionsSendTool(opts?: {
               error: "Session not visible from this sandboxed agent session.",
             });
           }
+          const isBrowserAgent = labelParam.toLowerCase() === "browser-agent";
+          const suggestion = isBrowserAgent ? " (did you mean to use `sessions_spawn` first?)" : "";
           return jsonResult({
             runId: crypto.randomUUID(),
             status: "error",
-            error: msg || `No session found with label: ${labelParam}`,
+            error: msg || `No session found with label: ${labelParam}${suggestion}`,
           });
         }
 
@@ -141,10 +143,12 @@ export function createSessionsSendTool(opts?: {
               error: "Session not visible from this sandboxed agent session.",
             });
           }
+          const isBrowserAgent = labelParam.toLowerCase() === "browser-agent";
+          const suggestion = isBrowserAgent ? " (did you mean to use `sessions_spawn` first?)" : "";
           return jsonResult({
             runId: crypto.randomUUID(),
             status: "error",
-            error: `No session found with label: ${labelParam}`,
+            error: `No session found with label: ${labelParam}${suggestion}`,
           });
         }
         sessionKey = resolvedKey;

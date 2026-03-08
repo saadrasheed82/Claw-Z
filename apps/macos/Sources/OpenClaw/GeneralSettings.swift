@@ -25,18 +25,20 @@ struct GeneralSettings: View {
     }
 
     var body: some View {
-        ScrollView(.vertical) {
-            VStack(alignment: .leading, spacing: 18) {
-                VStack(alignment: .leading, spacing: 12) {
-                    SettingsToggleRow(
-                        title: "OpenClaw active",
-                        subtitle: "Pause to stop the OpenClaw gateway; no messages will be processed.",
-                        binding: self.activeBinding)
+        VStack(alignment: .leading, spacing: 24) {
+            SettingsCard(icon: "power", title: "Active Status") {
+                SettingsToggleRow(
+                    title: "OpenClaw active",
+                    subtitle: "Pause to stop the OpenClaw gateway; no messages will be processed.",
+                    binding: self.activeBinding)
+            }
 
-                    self.connectionSection
+            SettingsCard(icon: "network", title: "Connection") {
+                self.connectionSection
+            }
 
-                    Divider()
-
+            SettingsCard(icon: "gearshape", title: "Startup & Behavior") {
+                VStack(spacing: 12) {
                     SettingsToggleRow(
                         title: "Launch at login",
                         subtitle: "Automatically start OpenClaw after you sign in.",
@@ -51,7 +53,11 @@ struct GeneralSettings: View {
                         title: "Play menu bar icon animations",
                         subtitle: "Enable idle blinks and wiggles on the status icon.",
                         binding: self.$state.iconAnimationsEnabled)
+                }
+            }
 
+            SettingsCard(icon: "app.badge", title: "Capabilities") {
+                VStack(spacing: 12) {
                     SettingsToggleRow(
                         title: "Allow Canvas",
                         subtitle: "Allow the agent to show and control the Canvas panel.",
@@ -72,18 +78,17 @@ struct GeneralSettings: View {
                         subtitle: "Show the Debug tab with development utilities.",
                         binding: self.$state.debugPaneEnabled)
                 }
-
-                Spacer(minLength: 12)
-                HStack {
-                    Spacer()
-                    Button("Quit OpenClaw") { NSApp.terminate(nil) }
-                        .buttonStyle(.borderedProminent)
-                }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 22)
-            .padding(.bottom, 16)
+
+            Spacer(minLength: 12)
+            HStack {
+                Spacer()
+                Button("Quit OpenClaw") { NSApp.terminate(nil) }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.red)
+            }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .onAppear {
             guard !self.isPreview else { return }
             self.refreshGatewayStatus()
@@ -102,29 +107,22 @@ struct GeneralSettings: View {
     }
 
     private var connectionSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("OpenClaw runs")
-                .font(.title3.weight(.semibold))
-                .frame(maxWidth: .infinity, alignment: .leading)
-
+        VStack(alignment: .leading, spacing: 16) {
             Picker("Mode", selection: self.$state.connectionMode) {
                 Text("Not configured").tag(AppState.ConnectionMode.unconfigured)
                 Text("Local (this Mac)").tag(AppState.ConnectionMode.local)
                 Text("Remote (another host)").tag(AppState.ConnectionMode.remote)
             }
-            .pickerStyle(.menu)
+            .pickerStyle(.segmented)
             .labelsHidden()
-            .frame(width: 260, alignment: .leading)
 
             if self.state.connectionMode == .unconfigured {
-                Text("Pick Local or Remote to start the Gateway.")
+                Label("Pick Local or Remote to start the Gateway.", systemImage: "info.circle")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
             }
 
             if self.state.connectionMode == .local {
-                // In Nix mode, gateway is managed declaratively - no install buttons.
                 if !self.isNixMode {
                     self.gatewayInstallerCard
                 }

@@ -13,6 +13,7 @@ const BROWSER_ACT_KINDS = [
   "wait",
   "evaluate",
   "close",
+  "scroll",
 ] as const;
 
 const BROWSER_TOOL_ACTIONS = [
@@ -80,6 +81,9 @@ const BrowserActSchema = Type.Object({
   timeoutMs: Type.Optional(Type.Number()),
   // evaluate
   fn: Type.Optional(Type.String()),
+  // scroll
+  direction: Type.Optional(Type.String()),
+  amount: Type.Optional(Type.String()),
 });
 
 // IMPORTANT: OpenAI function tool schemas must have a top-level `type: "object"`.
@@ -134,5 +138,7 @@ export const BrowserToolSchema = Type.Object({
   textGone: Type.Optional(Type.String()),
   loadState: Type.Optional(Type.String()),
   fn: Type.Optional(Type.String()),
+  direction: Type.Optional(Type.String()),
+  amount: Type.Optional(Type.String()),
   request: Type.Optional(BrowserActSchema),
 });

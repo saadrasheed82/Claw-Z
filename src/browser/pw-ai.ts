@@ -53,6 +53,7 @@ export {
   snapshotAriaViaPlaywright,
   snapshotRoleViaPlaywright,
   screenshotWithLabelsViaPlaywright,
+  scrollViaPlaywright,
   storageClearViaPlaywright,
   storageGetViaPlaywright,
   storageSetViaPlaywright,

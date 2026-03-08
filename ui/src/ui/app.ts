@@ -1,6 +1,7 @@
 import { LitElement } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { i18n, I18nController, isSupportedLocale } from "../i18n/index.ts";
+import "./components/plan-view.ts";
 import {
   handleChannelConfigReload as handleChannelConfigReloadInternal,
   handleChannelConfigSave as handleChannelConfigSaveInternal,
@@ -55,6 +56,13 @@ import { normalizeAssistantIdentity } from "./assistant-identity.ts";
 import { loadAssistantIdentity as loadAssistantIdentityInternal } from "./controllers/assistant-identity.ts";
 import type { CronFieldErrors } from "./controllers/cron.ts";
 import type { DevicePairingList } from "./controllers/devices.ts";
+import {
+  deleteWorkspaceFile as deleteWorkspaceFileInternal,
+  loadFiles as loadFilesInternal,
+  navigateFiles as navigateFilesInternal,
+  navigateFilesUp as navigateFilesUpInternal,
+  createWorkspaceFile as createWorkspaceFileInternal,
+} from "./controllers/files.ts";
 import type { ExecApprovalRequest } from "./controllers/exec-approval.ts";
 import type { ExecApprovalsFile, ExecApprovalsSnapshot } from "./controllers/exec-approvals.ts";
 import type { SkillMessage } from "./controllers/skills.ts";
@@ -66,6 +74,7 @@ import type {
   AgentsListResult,
   AgentsFilesListResult,
   AgentIdentityResult,
+  AgentsPlan,
   ConfigSnapshot,
   ConfigUiHints,
   CronJob,
@@ -140,6 +149,7 @@ export class OpenClawApp extends LitElement {
 
   @state() sessionKey = this.settings.sessionKey;
   @state() chatLoading = false;
+  @state() chatMode: "fast" | "planning" = "fast";
   @state() chatSending = false;
   @state() chatMessage = "";
   @state() chatMessages: unknown[] = [];
@@ -235,6 +245,9 @@ export class OpenClawApp extends LitElement {
   @state() agentIdentityLoading = false;
   @state() agentIdentityError: string | null = null;
   @state() agentIdentityById: Record<string, AgentIdentityResult> = {};
+  @state() agentPlanLoading = false;
+  @state() agentPlanError: string | null = null;
+  @state() agentPlan: Record<string, AgentsPlan> = {};
   @state() agentSkillsLoading = false;
   @state() agentSkillsError: string | null = null;
   @state() agentSkillsReport: SkillStatusReport | null = null;
@@ -501,6 +514,23 @@ export class OpenClawApp extends LitElement {
       messageOverride,
       opts,
     );
+  }
+
+  async handlePlanEvent(type: "proceed" | "modify" | "cancel", rawPlan: string) {
+    if (type === "proceed") {
+      this.chatMessage = `I have approved the plan. Please proceed executing step by step.\n\nApproved Plan:\n\`\`\`json\n${rawPlan}\n\`\`\``;
+      // Proceed should execute directly in Fast mode after plan approval.
+      this.chatMode = "fast";
+      await this.handleSendChat();
+    } else if (type === "modify") {
+      this.chatMessage = `Please modify the plan:\n\n1. `;
+      // Don't send yet, just populate the input for the user
+      const input = this.renderRoot.querySelector("textarea");
+      if (input) input.focus();
+    } else if (type === "cancel") {
+      this.chatMessage = "Plan canceled. Let's do something else.";
+      this.chatMode = "fast";
+    }
   }
 
   async handleWhatsAppStart(force: boolean) {

@@ -121,6 +121,13 @@ struct MenuContent: View {
             } label: {
                 Label("Open Chat", systemImage: "bubble.left.and.bubble.right")
             }
+            Button {
+                Task { @MainActor in
+                    FilesPanelManager.shared.show()
+                }
+            } label: {
+                Label("Open Files", systemImage: "folder")
+            }
             if self.state.canvasEnabled {
                 Button {
                     Task { @MainActor in

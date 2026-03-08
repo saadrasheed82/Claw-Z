@@ -14,6 +14,7 @@ import type {
   AgentsListResult,
   AgentsFilesListResult,
   AgentIdentityResult,
+  AgentsPlan,
   ChannelsStatusSnapshot,
   ConfigSnapshot,
   ConfigUiHints,
@@ -54,6 +55,8 @@ export type AppViewState = {
   chatLoading: boolean;
   chatSending: boolean;
   chatMessage: string;
+  chatMode: "fast" | "planning";
+  handlePlanEvent: (type: "proceed" | "modify" | "cancel", rawPlan: string) => Promise<void>;
   chatAttachments: ChatAttachment[];
   chatMessages: unknown[];
   chatToolMessages: unknown[];
@@ -137,11 +140,18 @@ export type AppViewState = {
   agentFilesList: AgentsFilesListResult | null;
   agentFileContents: Record<string, string>;
   agentFileDrafts: Record<string, string>;
+  filesLoading: boolean;
+  filesError: string | null;
+  filesList: Array<{ name: string; path: string; isDirectory: boolean; size?: number; updatedAtMs?: number }>;
+  filesCurrentPath: string;
   agentFileActive: string | null;
   agentFileSaving: boolean;
   agentIdentityLoading: boolean;
   agentIdentityError: string | null;
   agentIdentityById: Record<string, AgentIdentityResult>;
+  agentPlanLoading: boolean;
+  agentPlanError: string | null;
+  agentPlan: Record<string, AgentsPlan>;
   agentSkillsLoading: boolean;
   agentSkillsError: string | null;
   agentSkillsReport: SkillStatusReport | null;
@@ -318,4 +328,9 @@ export type AppViewState = {
     handleOpenSidebar: (content: string) => void;
     handleCloseSidebar: () => void;
     handleSplitRatioChange: (ratio: number) => void;
+    loadFiles: () => Promise<void>;
+    navigateFiles: (path: string) => Promise<void>;
+    navigateFilesUp: () => Promise<void>;
+    createWorkspaceFile: (name: string, isDirectory: boolean) => Promise<void>;
+    deleteWorkspaceFile: (path: string) => Promise<void>;
   };

@@ -879,6 +879,59 @@ class NodeRuntime(context: Context) {
     chat.sendMessage(message = message, thinkingLevel = thinking, attachments = attachments)
   }
 
+  suspend fun listWorkspaceFiles(): List<WorkspaceFileEntry> {
+    if (!_isConnected.value) return emptyList()
+    return try {
+      val res = operatorSession.request("workspace-files.list", """{"agentId":"main"}""")
+      val root = json.parseToJsonElement(res).asObjectOrNull()
+      val files = root?.get("files")?.asArrayOrNull() ?: return emptyList()
+      files.mapNotNull { file ->
+        val obj = file.asObjectOrNull() ?: return@mapNotNull null
+        WorkspaceFileEntry(
+          name = obj["name"].asStringOrNull() ?: return@mapNotNull null,
+          path = obj["path"].asStringOrNull() ?: return@mapNotNull null,
+          isDirectory = obj["isDirectory"].asBooleanOrNull() ?: false,
+          size = obj["size"]?.asLong?.toInt(),
+          updatedAtMs = obj["updatedAtMs"]?.asLong?.toInt()
+        )
+      }
+    } catch (e: Throwable) {
+      emptyList()
+    }
+  }
+
+  suspend fun createWorkspaceFile(name: String, isDirectory: Boolean, content: String = ""): Boolean {
+    if (!_isConnected.value) return false
+    return try {
+      val params = """{"agentId":"main","path":"$name","isDirectory":$isDirectory,"content":"$content"}"""
+      val res = operatorSession.request("workspace-files.create", params)
+      val root = json.parseToJsonElement(res).asObjectOrNull()
+      root?.get("ok")?.asBooleanOrNull() ?: false
+    } catch (e: Throwable) {
+      false
+    }
+  }
+
+  suspend fun deleteWorkspaceFile(path: String): Boolean {
+    if (!_isConnected.value) return false
+    return try {
+      val params = """{"agentId":"main","path":"$path"}"""
+      val res = operatorSession.request("workspace-files.delete", params)
+      val root = json.parseToJsonElement(res).asObjectOrNull()
+      root?.get("ok")?.asBooleanOrNull() ?: false
+    } catch (e: Throwable) {
+      false
+    }
+  }
+
+  data class WorkspaceFileEntry(
+    val name: String,
+    val path: String,
+    val isDirectory: Boolean,
+    val size: Int?,
+    val updatedAtMs: Int?
+  )
+
   private fun handleGatewayEvent(event: String, payloadJson: String?) {
     micCapture.handleGatewayEvent(event, payloadJson)
     talkMode.handleGatewayEvent(event, payloadJson)

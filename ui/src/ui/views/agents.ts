@@ -15,6 +15,7 @@ import {
   renderAgentCron,
 } from "./agents-panels-status-files.ts";
 import { renderAgentTools, renderAgentSkills } from "./agents-panels-tools-skills.ts";
+import { renderAgentPlan } from "./agents-plan-view.ts";
 import {
   agentBadgeText,
   buildAgentContext,
@@ -29,7 +30,7 @@ import {
   resolveModelPrimary,
 } from "./agents-utils.ts";
 
-export type AgentsPanel = "overview" | "files" | "tools" | "skills" | "channels" | "cron";
+export type AgentsPanel = "overview" | "plan" | "files" | "tools" | "skills" | "channels" | "cron";
 
 export type AgentsProps = {
   loading: boolean;
@@ -59,6 +60,9 @@ export type AgentsProps = {
   agentIdentityLoading: boolean;
   agentIdentityError: string | null;
   agentIdentityById: Record<string, AgentIdentityResult>;
+  agentPlanLoading: boolean;
+  agentPlanError: string | null;
+  agentPlan: Record<string, AgentsPlan>;
   agentSkillsLoading: boolean;
   agentSkillsReport: SkillStatusReport | null;
   agentSkillsError: string | null;
@@ -83,6 +87,7 @@ export type AgentsProps = {
   onModelFallbacksChange: (agentId: string, fallbacks: string[]) => void;
   onChannelsRefresh: () => void;
   onCronRefresh: () => void;
+  onPlanRefresh: (agentId: string) => void;
   onSkillsFilterChange: (next: string) => void;
   onSkillsRefresh: () => void;
   onAgentSkillToggle: (agentId: string, skillName: string, enabled: boolean) => void;
@@ -184,6 +189,23 @@ export function renderAgents(props: AgentsProps) {
                         onConfigSave: props.onConfigSave,
                         onModelChange: props.onModelChange,
                         onModelFallbacksChange: props.onModelFallbacksChange,
+                      })
+                    : nothing
+                }
+                ${
+                  props.activePanel === "plan"
+                    ? renderAgentPlan({
+                        context: buildAgentContext(
+                          selectedAgent,
+                          props.configForm,
+                          props.agentFilesList,
+                          defaultId,
+                          props.agentIdentityById[selectedAgent.id] ?? null,
+                        ),
+                        plan: props.agentPlan[selectedAgent.id] ?? null,
+                        loading: props.agentPlanLoading,
+                        error: props.agentPlanError,
+                        onRefresh: () => props.onPlanRefresh(selectedAgent.id),
                       })
                     : nothing
                 }
@@ -321,6 +343,7 @@ function renderAgentHeader(
 function renderAgentTabs(active: AgentsPanel, onSelect: (panel: AgentsPanel) => void) {
   const tabs: Array<{ id: AgentsPanel; label: string }> = [
     { id: "overview", label: "Overview" },
+    { id: "plan", label: "Plan" },
     { id: "files", label: "Files" },
     { id: "tools", label: "Tools" },
     { id: "skills", label: "Skills" },

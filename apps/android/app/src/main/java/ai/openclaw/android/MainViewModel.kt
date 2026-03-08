@@ -202,4 +202,11 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
   fun sendChat(message: String, thinking: String, attachments: List<OutgoingAttachment>) {
     runtime.sendChat(message = message, thinking = thinking, attachments = attachments)
   }
+
+  suspend fun listWorkspaceFiles(): List<NodeRuntime.WorkspaceFileEntry> = runtime.listWorkspaceFiles()
+
+  suspend fun createWorkspaceFile(name: String, isDirectory: Boolean, content: String = "") = 
+    runtime.createWorkspaceFile(name, isDirectory, content)
+
+  suspend fun deleteWorkspaceFile(path: String) = runtime.deleteWorkspaceFile(path)
 }

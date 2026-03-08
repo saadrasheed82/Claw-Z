@@ -23,6 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ScreenShare
 import androidx.compose.material.icons.filled.ChatBubble
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
@@ -52,6 +53,7 @@ private enum class HomeTab(
 ) {
   Connect(label = "Connect", icon = Icons.Default.CheckCircle),
   Chat(label = "Chat", icon = Icons.Default.ChatBubble),
+  Files(label = "Files", icon = Icons.Default.Folder),
   Voice(label = "Voice", icon = Icons.Default.RecordVoiceOver),
   Screen(label = "Screen", icon = Icons.AutoMirrored.Filled.ScreenShare),
   Settings(label = "Settings", icon = Icons.Default.Settings),
@@ -123,6 +125,7 @@ fun PostOnboardingTabs(viewModel: MainViewModel, modifier: Modifier = Modifier) 
       when (activeTab) {
         HomeTab.Connect -> ConnectTabScreen(viewModel = viewModel)
         HomeTab.Chat -> ChatSheet(viewModel = viewModel)
+        HomeTab.Files -> FilesTabScreen(viewModel = viewModel)
         HomeTab.Voice -> VoiceTabScreen(viewModel = viewModel)
         HomeTab.Screen -> ScreenTabScreen(viewModel = viewModel)
         HomeTab.Settings -> SettingsSheet(viewModel = viewModel)

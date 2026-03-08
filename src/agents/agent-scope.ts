@@ -121,6 +121,14 @@ export function resolveAgentConfig(
   const id = normalizeAgentId(agentId);
   const entry = resolveAgentEntry(cfg, id);
   if (!entry) {
+    if (id === "browser-agent") {
+      return {
+        name: "Autonomous Browser Agent",
+        tools: {
+          allow: ["browser", "web_search", "web_fetch"],
+        },
+      };
+    }
     return undefined;
   }
   return {

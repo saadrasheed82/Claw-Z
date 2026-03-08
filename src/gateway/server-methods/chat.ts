@@ -76,6 +76,8 @@ type AbortedPartialSnapshot = {
   abortOrigin: AbortOrigin;
 };
 
+type ChatSendMode = "fast" | "planning";
+
 const CHAT_HISTORY_TEXT_MAX_CHARS = 12_000;
 const CHAT_HISTORY_MAX_SINGLE_MESSAGE_BYTES = 128 * 1024;
 const CHAT_HISTORY_OVERSIZED_PLACEHOLDER = "[chat.history omitted: message too large]";
@@ -94,6 +96,18 @@ const CHANNEL_AGNOSTIC_SESSION_SCOPES = new Set([
   "topic",
 ]);
 const CHANNEL_SCOPED_SESSION_SHAPES = new Set(["direct", "dm", "group", "channel"]);
+
+function normalizeChatSendMode(value: unknown): ChatSendMode {
+  return value === "planning" ? "planning" : "fast";
+}
+
+function buildPlanningModeMessage(message: string): string {
+  const trimmed = message.trim();
+  if (!trimmed) {
+    return message;
+  }
+  return `[PLANNING MODE]\nBefore executing, produce a concise actionable plan with explicit todos and statuses.\nUse agentic capabilities where helpful (planning, task tracking, and step-by-step execution).\nIf context is missing, ask clarifying questions before execution.\n\nUser request:\n${message}`;
+}
 
 function stripDisallowedChatControlChars(message: string): string {
   let output = "";
@@ -742,6 +756,7 @@ export const chatHandlers: GatewayRequestHandlers = {
     const p = params as {
       sessionKey: string;
       message: string;
+      mode?: ChatSendMode;
       thinking?: string;
       deliver?: boolean;
       attachments?: Array<{
@@ -859,10 +874,16 @@ export const chatHandlers: GatewayRequestHandlers = {
       respond(true, ackPayload, undefined, { runId: clientRunId });
 
       const trimmedMessage = parsedMessage.trim();
+      const chatMode = normalizeChatSendMode(p.mode);
+      const modeAdjustedMessage =
+        chatMode === "planning" ? buildPlanningModeMessage(parsedMessage) : parsedMessage;
+      const trimmedModeAdjustedMessage = modeAdjustedMessage.trim();
       const injectThinking = Boolean(
-        p.thinking && trimmedMessage && !trimmedMessage.startsWith("/"),
+        p.thinking && trimmedModeAdjustedMessage && !trimmedModeAdjustedMessage.startsWith("/"),
       );
-      const commandBody = injectThinking ? `/think ${p.thinking} ${parsedMessage}` : parsedMessage;
+      const commandBody = injectThinking
+        ? `/think ${p.thinking} ${modeAdjustedMessage}`
+        : modeAdjustedMessage;
       const clientInfo = client?.connect?.client;
       const shouldDeliverExternally = p.deliver === true;
       const routeChannelCandidate = normalizeMessageChannel(
@@ -922,13 +943,13 @@ export const chatHandlers: GatewayRequestHandlers = {
       // Inject timestamp so agents know the current date/time.
       // Only BodyForAgent gets the timestamp — Body stays raw for UI display.
       // See: https://github.com/moltbot/moltbot/issues/3658
-      const stampedMessage = injectTimestamp(parsedMessage, timestampOptsFromConfig(cfg));
+      const stampedMessage = injectTimestamp(modeAdjustedMessage, timestampOptsFromConfig(cfg));
 
       const ctx: MsgContext = {
-        Body: parsedMessage,
+        Body: modeAdjustedMessage,
         BodyForAgent: stampedMessage,
         BodyForCommands: commandBody,
-        RawBody: parsedMessage,
+        RawBody: modeAdjustedMessage,
         CommandBody: commandBody,
         SessionKey: sessionKey,
         Provider: INTERNAL_MESSAGE_CHANNEL,

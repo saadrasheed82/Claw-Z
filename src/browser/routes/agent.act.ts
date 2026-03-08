@@ -152,6 +152,24 @@ export function registerBrowserAgentActRoutes(
             await pw.scrollIntoViewViaPlaywright(scrollRequest);
             return res.json({ ok: true, targetId: tab.targetId });
           }
+          case "scroll": {
+            const direction = toStringOrEmpty(body.direction) as "up" | "down" | "left" | "right";
+            if (!direction || !["up", "down", "left", "right"].includes(direction)) {
+              return jsonError(res, 400, "direction must be up|down|left|right");
+            }
+            const amountRaw = body.amount;
+            const amount = amountRaw === "page" ? "page" : toNumber(amountRaw);
+            const timeoutMs = toNumber(body.timeoutMs);
+
+            await pw.scrollViaPlaywright({
+              cdpUrl,
+              targetId: tab.targetId,
+              direction,
+              amount: amount ?? undefined,
+              timeoutMs: timeoutMs ?? undefined,
+            });
+            return res.json({ ok: true, targetId: tab.targetId });
+          }
           case "drag": {
             const startRef = toStringOrEmpty(body.startRef);
             const endRef = toStringOrEmpty(body.endRef);

@@ -112,6 +112,7 @@ export function renderMessageGroup(
     showReasoning: boolean;
     assistantName?: string;
     assistantAvatar?: string | null;
+    onPlanEvent?: (type: "proceed" | "modify" | "cancel", rawPlan: string) => void;
   },
 ) {
   const normalizedRole = normalizeRoleForGrouping(group.role);
@@ -142,6 +143,7 @@ export function renderMessageGroup(
             {
               isStreaming: group.isStreaming && index === group.messages.length - 1,
               showReasoning: opts.showReasoning,
+              onPlanEvent: opts.onPlanEvent,
             },
             opts.onOpenSidebar,
           ),
@@ -223,7 +225,11 @@ function renderMessageImages(images: ImageBlock[]) {
 
 function renderGroupedMessage(
   message: unknown,
-  opts: { isStreaming: boolean; showReasoning: boolean },
+  opts: { 
+    isStreaming: boolean; 
+    showReasoning: boolean;
+    onPlanEvent?: (type: "proceed" | "modify" | "cancel", rawPlan: string) => void;
+  },
   onOpenSidebar?: (content: string) => void,
 ) {
   const m = message as Record<string, unknown>;
@@ -248,6 +254,24 @@ function renderGroupedMessage(
   const markdown = markdownBase;
   const canCopyMarkdown = role === "assistant" && Boolean(markdown?.trim());
 
+  let planJson: string | null = null;
+  let remainingMarkdown = markdown;
+
+  if (markdown) {
+    const planMatch = /```json\s*(\[\s*\{[\s\S]*\}\s*\])\s*```/m.exec(markdown);
+    if (planMatch && planMatch[1]) {
+      try {
+        const parsed = JSON.parse(planMatch[1]);
+        if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].title !== undefined) {
+           planJson = planMatch[1];
+           remainingMarkdown = markdown.replace(planMatch[0], '');
+        }
+      } catch(e) {
+        // Not valid JSON, ignore
+      }
+    }
+  }
+
   const bubbleClasses = [
     "chat-bubble",
     canCopyMarkdown ? "has-copy" : "",
@@ -261,7 +285,7 @@ function renderGroupedMessage(
     return html`${toolCards.map((card) => renderToolCardSidebar(card, onOpenSidebar))}`;
   }
 
-  if (!markdown && !hasToolCards && !hasImages) {
+  if (!markdown && !hasToolCards && !hasImages && !planJson) {
     return nothing;
   }
 
@@ -277,8 +301,18 @@ function renderGroupedMessage(
           : nothing
       }
       ${
-        markdown
-          ? html`<div class="chat-text" dir="${detectTextDirection(markdown)}">${unsafeHTML(toSanitizedMarkdownHtml(markdown))}</div>`
+        remainingMarkdown?.trim()
+          ? html`<div class="chat-text" dir="${detectTextDirection(remainingMarkdown)}">${unsafeHTML(toSanitizedMarkdownHtml(remainingMarkdown))}</div>`
+          : nothing
+      }
+      ${
+        planJson
+          ? html`<plan-view 
+                  rawPlan=${planJson}
+                  @plan-proceed=${() => opts.onPlanEvent?.("proceed", planJson!)}
+                  @plan-modify=${() => opts.onPlanEvent?.("modify", planJson!)}
+                  @plan-cancel=${() => opts.onPlanEvent?.("cancel", planJson!)}
+                 ></plan-view>`
           : nothing
       }
       ${toolCards.map((card) => renderToolCardSidebar(card, onOpenSidebar))}

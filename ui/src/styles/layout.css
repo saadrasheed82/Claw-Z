@@ -3,11 +3,11 @@
    =========================================== */
 
 .shell {
-  --shell-pad: 16px;
-  --shell-gap: 16px;
-  --shell-nav-width: 220px;
-  --shell-topbar-height: 56px;
-  --shell-focus-duration: 200ms;
+  --shell-pad: 20px;
+  --shell-gap: 20px;
+  --shell-nav-width: 260px;
+  --shell-topbar-height: 52px;
+  --shell-focus-duration: 250ms;
   --shell-focus-ease: var(--ease-out);
   height: 100vh;
   display: grid;
@@ -64,7 +64,7 @@
   padding-top: 0;
 }
 
-.shell--chat-focus .content > * + * {
+.shell--chat-focus .content>*+* {
   margin-top: 0;
 }
 
@@ -81,10 +81,11 @@
   justify-content: space-between;
   align-items: center;
   gap: 16px;
-  padding: 0 20px;
+  padding: 0 16px;
   height: var(--shell-topbar-height);
   border-bottom: 1px solid var(--border);
   background: var(--bg);
+  transition: background var(--duration-normal) ease;
 }
 
 .topbar-left {
@@ -135,19 +136,18 @@
 }
 
 .brand-title {
-  font-size: 16px;
-  font-weight: 700;
-  letter-spacing: -0.03em;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
   line-height: 1.1;
-  color: var(--text-strong);
+  color: var(--text);
+  opacity: 0.9;
 }
 
 .brand-sub {
-  font-size: 10px;
-  font-weight: 500;
-  color: var(--muted);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  font-size: 11px;
+  font-weight: 450;
+  color: var(--text-muted);
   line-height: 1;
 }
 
@@ -198,18 +198,22 @@
   grid-area: nav;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 16px 12px;
-  background: var(--bg);
-  scrollbar-width: none; /* Firefox */
+  padding: 20px 12px;
+  background: var(--bg-elevated);
+  border-right: 1px solid var(--border);
+  scrollbar-width: none;
+  /* Firefox */
   transition:
     width var(--shell-focus-duration) var(--shell-focus-ease),
     padding var(--shell-focus-duration) var(--shell-focus-ease),
-    opacity var(--shell-focus-duration) var(--shell-focus-ease);
+    opacity var(--shell-focus-duration) var(--shell-focus-ease),
+    background var(--duration-normal) ease;
   min-height: 0;
 }
 
 .nav::-webkit-scrollbar {
-  display: none; /* Chrome/Safari */
+  display: none;
+  /* Chrome/Safari */
 }
 
 .shell--chat-focus .nav {
@@ -231,7 +235,6 @@
   pointer-events: none;
 }
 
-/* Nav collapse toggle */
 .nav-collapse-toggle {
   width: 32px;
   height: 32px;
@@ -245,7 +248,7 @@
   transition:
     background var(--duration-fast) ease,
     border-color var(--duration-fast) ease;
-  margin-bottom: 16px;
+  margin-bottom: 24px;
 }
 
 .nav-collapse-toggle:hover {
@@ -257,15 +260,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
-  color: var(--muted);
+  width: 20px;
+  height: 20px;
+  color: var(--text-strong);
   transition: color var(--duration-fast) ease;
 }
 
 .nav-collapse-toggle__icon svg {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   stroke: currentColor;
   fill: none;
   stroke-width: 1.5px;
@@ -353,18 +356,20 @@
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 10px;
-  padding: 8px 10px;
-  border-radius: var(--radius-md);
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
   border: 1px solid transparent;
   background: transparent;
-  color: var(--muted);
+  color: var(--text-muted);
+  font-weight: 500;
   cursor: pointer;
   text-decoration: none;
   transition:
     border-color var(--duration-fast) ease,
     background var(--duration-fast) ease,
-    color var(--duration-fast) ease;
+    color var(--duration-fast) ease,
+    transform 100ms ease;
 }
 
 .nav-item__icon {
@@ -427,7 +432,7 @@
   overflow-x: hidden;
 }
 
-.content > * + * {
+.content>*+* {
   margin-top: 24px;
 }
 
@@ -443,7 +448,7 @@
   padding-bottom: 0;
 }
 
-.content--chat > * + * {
+.content--chat>*+* {
   margin-top: 0;
 }
 
@@ -501,7 +506,7 @@
   gap: 16px;
 }
 
-.content--chat .content-header > div:first-child {
+.content--chat .content-header>div:first-child {
   text-align: left;
 }
 
@@ -562,9 +567,10 @@
 }
 
 /* ===========================================
-   Responsive - Tablet
+   Responsive - Tablet (Disabled for vertical sidebar preference)
    =========================================== */
 
+/* 
 @media (max-width: 1100px) {
   .shell {
     --shell-pad: 12px;
@@ -619,3 +625,4 @@
     grid-template-columns: 1fr;
   }
 }
+*/

@@ -29,12 +29,14 @@ struct RootCanvas: View {
         case settings
         case chat
         case quickSetup
+        case files
 
         var id: Int {
             switch self {
             case .settings: 0
             case .chat: 1
             case .quickSetup: 2
+            case .files: 3
             }
         }
     }
@@ -80,6 +82,9 @@ struct RootCanvas: View {
                 },
                 openSettings: {
                     self.presentedSheet = .settings
+                },
+                openFiles: {
+                    self.presentedSheet = .files
                 })
                 .preferredColorScheme(.dark)
 
@@ -107,6 +112,8 @@ struct RootCanvas: View {
                 GatewayQuickSetupSheet()
                     .environment(self.appModel)
                     .environment(self.gatewayController)
+            case .files:
+                FilesTab(gateway: self.appModel.operatorSession)
             }
         }
         .fullScreenCover(isPresented: self.$showOnboarding) {
@@ -262,6 +269,7 @@ private struct CanvasContent: View {
     var cameraHUDKind: NodeAppModel.CameraHUDKind?
     var openChat: () -> Void
     var openSettings: () -> Void
+    var openFiles: () -> Void
 
     private var brightenButtons: Bool { self.systemColorScheme == .light }
 
@@ -274,6 +282,11 @@ private struct CanvasContent: View {
                     self.openChat()
                 }
                 .accessibilityLabel("Chat")
+
+                OverlayButton(systemImage: "folder.fill", brighten: self.brightenButtons) {
+                    self.openFiles()
+                }
+                .accessibilityLabel("Files")
 
                 if self.talkButtonEnabled {
                     // Talk mode lives on a side bubble so it doesn't get buried in settings.

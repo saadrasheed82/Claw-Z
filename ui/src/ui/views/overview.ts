@@ -194,167 +194,200 @@ export function renderOverview(props: OverviewProps) {
   const currentLocale = i18n.getLocale();
 
   return html`
-    <section class="grid grid-cols-2">
-      <div class="card">
-        <div class="card-title">${t("overview.access.title")}</div>
-        <div class="card-sub">${t("overview.access.subtitle")}</div>
-        <div class="form-grid" style="margin-top: 16px;">
-          <label class="field">
-            <span>${t("overview.access.wsUrl")}</span>
-            <input
-              .value=${props.settings.gatewayUrl}
-              @input=${(e: Event) => {
-                const v = (e.target as HTMLInputElement).value;
-                props.onSettingsChange({ ...props.settings, gatewayUrl: v });
-              }}
-              placeholder="ws://100.x.y.z:18789"
-            />
-          </label>
-          ${
-            isTrustedProxy
-              ? ""
-              : html`
-                <label class="field">
-                  <span>${t("overview.access.token")}</span>
-                  <input
-                    .value=${props.settings.token}
-                    @input=${(e: Event) => {
-                      const v = (e.target as HTMLInputElement).value;
-                      props.onSettingsChange({ ...props.settings, token: v });
-                    }}
-                    placeholder="OPENCLAW_GATEWAY_TOKEN"
-                  />
-                </label>
-                <label class="field">
-                  <span>${t("overview.access.password")}</span>
-                  <input
-                    type="password"
-                    .value=${props.password}
-                    @input=${(e: Event) => {
-                      const v = (e.target as HTMLInputElement).value;
-                      props.onPasswordChange(v);
-                    }}
-                    placeholder="system or shared password"
-                  />
-                </label>
-              `
-          }
-          <label class="field">
-            <span>${t("overview.access.sessionKey")}</span>
-            <input
-              .value=${props.settings.sessionKey}
-              @input=${(e: Event) => {
-                const v = (e.target as HTMLInputElement).value;
-                props.onSessionKeyChange(v);
-              }}
-            />
-          </label>
-          <label class="field">
-            <span>${t("overview.access.language")}</span>
-            <select
-              .value=${currentLocale}
-              @change=${(e: Event) => {
-                const v = (e.target as HTMLSelectElement).value as Locale;
-                void i18n.setLocale(v);
-                props.onSettingsChange({ ...props.settings, locale: v });
-              }}
-            >
-              ${SUPPORTED_LOCALES.map((loc) => {
-                const key = loc.replace(/-([a-zA-Z])/g, (_, c) => c.toUpperCase());
-                return html`<option value=${loc}>${t(`languages.${key}`)}</option>`;
-              })}
-            </select>
-          </label>
-        </div>
-        <div class="row" style="margin-top: 14px;">
-          <button class="btn" @click=${() => props.onConnect()}>${t("common.connect")}</button>
-          <button class="btn" @click=${() => props.onRefresh()}>${t("common.refresh")}</button>
-          <span class="muted">${
-            isTrustedProxy ? t("overview.access.trustedProxy") : t("overview.access.connectHint")
-          }</span>
-        </div>
-      </div>
+    <!-- Decorative background elements for modern aesthetic -->
+    <style>
+      .overview-section {
+        position: relative;
+        overflow: hidden;
+      }
+      
+      .overview-decorative {
+        position: absolute;
+        pointer-events: none;
+        opacity: 0.03;
+        z-index: 0;
+      }
+      
+      .overview-decorative-1 {
+        width: 600px;
+        height: 600px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--accent), transparent);
+        top: -200px;
+        right: -100px;
+      }
+      
+      .overview-decorative-2 {
+        width: 400px;
+        height: 400px;
+        border-radius: 50%;
+        background: linear-gradient(225deg, var(--accent-2), transparent);
+        bottom: -100px;
+        left: -150px;
+        filter: blur(80px);
+      }
+      
+      .overview-content {
+        position: relative;
+        z-index: 1;
+        padding: 10px;
+      }
 
-      <div class="card">
-        <div class="card-title">${t("overview.snapshot.title")}</div>
-        <div class="card-sub">${t("overview.snapshot.subtitle")}</div>
-        <div class="stat-grid" style="margin-top: 16px;">
-          <div class="stat">
-            <div class="stat-label">${t("overview.snapshot.status")}</div>
-            <div class="stat-value ${props.connected ? "ok" : "warn"}">
-              ${props.connected ? t("common.ok") : t("common.offline")}
+      .glass-pill {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        padding: 4px 12px;
+        border-radius: 99px;
+        font-size: 12px;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+    </style>
+    
+    <section class="overview-section">
+      <!-- Decorative gradient blobs for visual depth -->
+      <div class="overview-decorative overview-decorative-1"></div>
+      <div class="overview-decorative overview-decorative-2"></div>
+      
+      <div class="overview-content">
+        <section class="grid grid-cols-2">
+          <div class="card glass-card">
+            <div class="card-header" style="margin-bottom: 20px;">
+              <div class="card-title">${t("overview.access.title")}</div>
+              <div class="card-sub">${t("overview.access.subtitle")}</div>
+            </div>
+            <div class="form-grid" style="margin-top: 16px;">
+              <label class="field">
+                <span>${t("overview.access.wsUrl")}</span>
+                <input
+                  .value=${props.settings.gatewayUrl}
+                  @input=${(e: Event) => {
+                    const v = (e.target as HTMLInputElement).value;
+                    props.onSettingsChange({ ...props.settings, gatewayUrl: v });
+                  }}
+                  placeholder="ws://100.x.y.z:18789"
+                />
+              </label>
+              ${
+                isTrustedProxy
+                  ? ""
+                  : html`
+                    <label class="field">
+                      <span>${t("overview.access.token")}</span>
+                      <input
+                        .value=${props.settings.token}
+                        @input=${(e: Event) => {
+                          const v = (e.target as HTMLInputElement).value;
+                          props.onSettingsChange({ ...props.settings, token: v });
+                        }}
+                        placeholder="OPENCLAW_GATEWAY_TOKEN"
+                      />
+                    </label>
+                    <label class="field">
+                      <span>${t("overview.access.password")}</span>
+                      <input
+                        type="password"
+                        .value=${props.password}
+                        @input=${(e: Event) => {
+                          const v = (e.target as HTMLInputElement).value;
+                          props.onPasswordChange(v);
+                        }}
+                        placeholder="system or shared password"
+                      />
+                    </label>
+                  `
+              }
+              <label class="field">
+                <span>${t("overview.access.sessionKey")}</span>
+                <input
+                  .value=${props.settings.sessionKey}
+                  @input=${(e: Event) => {
+                    const v = (e.target as HTMLInputElement).value;
+                    props.onSessionKeyChange(v);
+                  }}
+                />
+              </label>
+              <label class="field">
+                <span>${t("overview.access.language")}</span>
+                <select
+                  .value=${currentLocale}
+                  @change=${(e: Event) => {
+                    const v = (e.target as HTMLSelectElement).value as Locale;
+                    void i18n.setLocale(v);
+                    props.onSettingsChange({ ...props.settings, locale: v });
+                  }}
+                >
+                  ${SUPPORTED_LOCALES.map((loc) => {
+                    const key = loc.replace(/-([a-zA-Z])/g, (_, c) => c.toUpperCase());
+                    return html`<option value=${loc}>${t(`languages.${key}`)}</option>`;
+                  })}
+                </select>
+              </label>
+            </div>
+            <div class="row" style="margin-top: 14px;">
+              <button class="btn" @click=${() => props.onConnect()}>${t("common.connect")}</button>
+              <button class="btn" @click=${() => props.onRefresh()}>${t("common.refresh")}</button>
+              <span class="muted">${
+                isTrustedProxy ? t("overview.access.trustedProxy") : t("overview.access.connectHint")
+              }</span>
             </div>
           </div>
-          <div class="stat">
-            <div class="stat-label">${t("overview.snapshot.uptime")}</div>
-            <div class="stat-value">${uptime}</div>
-          </div>
-          <div class="stat">
-            <div class="stat-label">${t("overview.snapshot.tickInterval")}</div>
-            <div class="stat-value">${tick}</div>
-          </div>
-          <div class="stat">
-            <div class="stat-label">${t("overview.snapshot.lastChannelsRefresh")}</div>
-            <div class="stat-value">
-              ${props.lastChannelsRefresh ? formatRelativeTimestamp(props.lastChannelsRefresh) : t("common.na")}
+
+          <div class="card glass-card">
+            <div class="card-header" style="margin-bottom: 20px;">
+              <div class="card-title">${t("overview.snapshot.title")}</div>
+              <div class="card-sub">${t("overview.snapshot.subtitle")}</div>
             </div>
-          </div>
-        </div>
-        ${
-          props.lastError
-            ? html`<div class="callout danger" style="margin-top: 14px;">
-              <div>${props.lastError}</div>
-              ${pairingHint ?? ""}
-              ${authHint ?? ""}
-              ${insecureContextHint ?? ""}
-            </div>`
-            : html`
-                <div class="callout" style="margin-top: 14px">
-                  ${t("overview.snapshot.channelsHint")}
+            <div class="stat-grid" style="margin-top: 16px;">
+              <div class="stat">
+                <div class="stat-label">${t("overview.snapshot.status")}</div>
+                <div class="stat-value ${props.connected ? "ok" : "warn"}">
+                  ${props.connected ? t("common.ok") : t("common.offline")}
                 </div>
-              `
-        }
-      </div>
-    </section>
-
-    <section class="grid grid-cols-3" style="margin-top: 18px;">
-      <div class="card stat-card">
-        <div class="stat-label">${t("overview.stats.instances")}</div>
-        <div class="stat-value">${props.presenceCount}</div>
-        <div class="muted">${t("overview.stats.instancesHint")}</div>
-      </div>
-      <div class="card stat-card">
-        <div class="stat-label">${t("overview.stats.sessions")}</div>
-        <div class="stat-value">${props.sessionsCount ?? t("common.na")}</div>
-        <div class="muted">${t("overview.stats.sessionsHint")}</div>
-      </div>
-      <div class="card stat-card">
-        <div class="stat-label">${t("overview.stats.cron")}</div>
-        <div class="stat-value">
-          ${props.cronEnabled == null ? t("common.na") : props.cronEnabled ? t("common.enabled") : t("common.disabled")}
-        </div>
-        <div class="muted">${t("overview.stats.cronNext", { time: formatNextRun(props.cronNext) })}</div>
-      </div>
-    </section>
-
-    <section class="card" style="margin-top: 18px;">
-      <div class="card-title">${t("overview.notes.title")}</div>
-      <div class="card-sub">${t("overview.notes.subtitle")}</div>
-      <div class="note-grid" style="margin-top: 14px;">
-        <div>
-          <div class="note-title">${t("overview.notes.tailscaleTitle")}</div>
-          <div class="muted">
-            ${t("overview.notes.tailscaleText")}
+              </div>
+            </div>
+            ${
+              props.lastError
+                ? html`<div class="callout danger" style="margin-top: 14px;">
+                  <div>${props.lastError}</div>
+                  ${pairingHint ?? ""}
+                  ${authHint ?? ""}
+                  ${insecureContextHint ?? ""}
+                </div>`
+                : html`
+                    <div class="callout" style="margin-top: 14px">
+                      ${t("overview.snapshot.channelsHint")}
+                    </div>
+                  `
+            }
           </div>
-        </div>
-        <div>
-          <div class="note-title">${t("overview.notes.sessionTitle")}</div>
-          <div class="muted">${t("overview.notes.sessionText")}</div>
-        </div>
-        <div>
-          <div class="note-title">${t("overview.notes.cronTitle")}</div>
-          <div class="muted">${t("overview.notes.cronText")}</div>
-        </div>
+        </section>
+        
+        <section class="card glass-card" style="margin-top: 18px;">
+          <div class="card-header" style="margin-bottom: 20px;">
+            <div class="card-title">${t("overview.notes.title")}</div>
+            <div class="card-sub">${t("overview.notes.subtitle")}</div>
+          </div>
+          <div class="note-grid" style="margin-top: 14px;">
+            <div>
+              <div class="note-title">${t("overview.notes.tailscaleTitle")}</div>
+              <div class="muted">
+                ${t("overview.notes.tailscaleText")}
+              </div>
+            </div>
+            <div>
+              <div class="note-title">${t("overview.notes.sessionTitle")}</div>
+              <div class="muted">${t("overview.notes.sessionText")}</div>
+            </div>
+            <div>
+              <div class="note-title">${t("overview.notes.cronTitle")}</div>
+              <div class="muted">${t("overview.notes.cronText")}</div>
+            </div>
+          </div>
+        </section>
       </div>
     </section>
   `;

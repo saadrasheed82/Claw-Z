@@ -42,6 +42,7 @@ import {
   validateAgentsFilesGetParams,
   validateAgentsFilesListParams,
   validateAgentsFilesSetParams,
+  validateAgentsPlanGetParams,
   validateAgentsListParams,
   validateAgentsUpdateParams,
 } from "../protocol/index.js";
@@ -761,5 +762,40 @@ export const agentsHandlers: GatewayRequestHandlers = {
       },
       undefined,
     );
+  },
+  "agents.plan.get": async ({ params, respond }) => {
+    if (!validateAgentsPlanGetParams(params)) {
+      respond(
+        false,
+        undefined,
+        errorShape(
+          ErrorCodes.INVALID_REQUEST,
+          `invalid agents.plan.get params: ${formatValidationErrors(
+            validateAgentsPlanGetParams.errors,
+          )}`,
+        ),
+      );
+      return;
+    }
+
+    const cfg = loadConfig();
+    const agentId = resolveAgentIdOrError(String(params.agentId ?? ""), cfg);
+    if (!agentId) {
+      respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, "unknown agent id"));
+      return;
+    }
+
+    const agentDir = resolveAgentDir(cfg, agentId);
+    const planPath = path.join(agentDir, "plan.json");
+
+    let planData: any = undefined;
+    try {
+      const content = await fs.readFile(planPath, "utf-8");
+      planData = JSON.parse(content);
+    } catch {
+      // Plan missing or invalid JSON
+    }
+
+    respond(true, { agentId, plan: planData }, undefined);
   },
 };

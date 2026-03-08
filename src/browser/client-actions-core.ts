@@ -40,6 +40,13 @@ export type BrowserActRequest =
       timeoutMs?: number;
     }
   | {
+      kind: "scroll";
+      direction: "up" | "down" | "left" | "right";
+      amount?: number | "page";
+      targetId?: string;
+      timeoutMs?: number;
+    }
+  | {
       kind: "drag";
       startRef: string;
       endRef: string;

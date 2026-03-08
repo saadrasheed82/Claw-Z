@@ -40,6 +40,7 @@ export type ChatState = {
   chatStream: string | null;
   chatStreamStartedAt: number | null;
   lastError: string | null;
+  chatMode?: "fast" | "planning";
 };
 
 export type ChatEventPayload = {
@@ -139,7 +140,7 @@ export async function sendChatMessage(
   if (!state.client || !state.connected) {
     return null;
   }
-  const msg = message.trim();
+  let msg = message.trim();
   const hasAttachments = attachments && attachments.length > 0;
   if (!msg && !hasAttachments) {
     return null;
@@ -199,6 +200,7 @@ export async function sendChatMessage(
     await state.client.request("chat.send", {
       sessionKey: state.sessionKey,
       message: msg,
+      mode: state.chatMode ?? "fast",
       deliver: false,
       idempotencyKey: runId,
       attachments: apiAttachments,

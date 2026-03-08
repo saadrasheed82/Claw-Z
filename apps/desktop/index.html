@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenClaw Desktop</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        /* ── Design Tokens - Claude-inspired (Synchronized) ── */
+        :root {
+            --sidebar-bg: #1f1f1f;
+            --sidebar-hover: rgba(255, 255, 255, 0.04);
+            --sidebar-active: rgba(255, 255, 255, 0.08);
+            --sidebar-border: rgba(255, 255, 255, 0.08);
+            --main-bg: #171717;
+            --surface: #1f1f1f;
+            --surface-2: #262626;
+            --border: rgba(255, 255, 255, 0.08);
+            --text: #e5e5e5;
+            --text-muted: #a3a3a3;
+            --text-dim: #737373;
+            --accent: #ad89ff;
+            --accent-hover: #bc9cff;
+            --accent-soft: rgba(173, 137, 255, 0.12);
+            --green: #22c55e;
+            --green-soft: rgba(34, 197, 94, 0.12);
+            --red: #ef4444;
+            --red-soft: rgba(239, 68, 68, 0.12);
+            --yellow: #f59e0b;
+            --yellow-soft: rgba(245, 158, 11, 0.12);
+            --radius: 10px;
+            --radius-sm: 6px;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass-blur: 12px;
+        }
+
+        /* ── Glassmorphism & Premium UI ── */
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(var(--glass-blur));
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .premium-btn {
+            background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+            border: none;
+            color: white;
+            box-shadow: 0 2px 10px var(--accent-soft);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .premium-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px var(--accent-soft);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: var(--main-bg);
+            color: var(--text);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            flex-direction: column;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        /* ── Xterm Theme ── */
+        .terminal-container {
+            flex: 1;
+            padding: 12px;
+            background: #000;
+            overflow: hidden;
+        }
+
+        #terminal-view {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Xterm custom styles */
+        .xterm-viewport::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .xterm-viewport::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .xterm-viewport::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 4px;
+        }
+
+        /* ── Custom Titlebar ── */
+        .titlebar {
+            -webkit-app-region: drag;
+            height: 36px;
+            background: var(--sidebar-bg);
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            gap: 12px;
+            border-bottom: 1px solid var(--border);
+            user-select: none;
+            flex-shrink: 0;
+            z-index: 100;
+        }
+
+        .titlebar-logo {
+            width: 18px;
+            height: 18px;
+            background: var(--accent);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 700;
+            color: white;
+            flex-shrink: 0;
+            box-shadow: 0 0 10px var(--accent-soft);
+        }
+
+        .titlebar-name {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text);
+            opacity: 0.8;
+            letter-spacing: -0.01em;
+        }
+
+        .titlebar-status-pill {
+            -webkit-app-region: no-drag;
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 3px 10px 3px 8px;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .titlebar-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--text-dim);
+            transition: background 0.3s;
+        }
+
+        .titlebar-dot.running {
+            background: var(--green);
+            box-shadow: 0 0 6px var(--green);
+        }
+
+        .titlebar-dot.starting {
+            background: var(--yellow);
+        }
+
+        .titlebar-dot.error {
+            background: var(--red);
+        }
+
+        /* ── Titlebar Buttons ── */
+        .titlebar-controls {
+            -webkit-app-region: no-drag;
+            display: flex;
+            margin-left: 8px;
+        }
+
+        .titlebar-btn {
+            width: 46px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s, color 0.1s;
+            color: var(--text-muted);
+        }
+
+        .titlebar-btn:hover {
+            background: var(--sidebar-hover);
+            color: var(--text);
+        }
+
+        .titlebar-btn.close:hover {
+            background: #e81123;
+            color: white;
+        }
+
+        .titlebar-btn svg {
+            width: 12px;
+            height: 12px;
+        }
+
+
+        /* ── App Layout ── */
+        .app-container {
+            display: flex;
+            flex: 1;
+            flex-direction: column;
+            height: calc(100vh - 40px);
+            overflow: hidden;
+        }
+
+
+        /* ── Sidebar ── */
+        .sidebar {
+            width: 100%;
+            height: 50px;
+            background: var(--sidebar-bg);
+            border-bottom: 1px solid var(--sidebar-border);
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            padding: 0 12px;
+            flex-shrink: 0;
+            z-index: 10;
+        }
+
+
+        .sidebar-section-label {
+            display: none;
+        }
+
+
+        .nav-item {
+            padding: 6px 12px;
+            margin: 0 4px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 400;
+            transition: background 0.15s, color 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-radius: var(--radius-sm);
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+
+        .nav-item:hover {
+            background: var(--sidebar-hover);
+            color: var(--text);
+        }
+
+        .nav-item.active {
+            background: var(--sidebar-active);
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        .nav-icon {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+            opacity: 0.7;
+        }
+
+        .nav-item.active .nav-icon {
+            opacity: 1;
+        }
+
+        /* Sidebar footer */
+        .sidebar-footer {
+            margin-left: auto;
+            padding: 0 8px;
+            height: 100%;
+            display: flex;
+            align-items: center;
+        }
+
+        .gateway-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 4px 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .gateway-card-title {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0px;
+        }
+
+
+        .gateway-status-row {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            margin-bottom: 0px;
+        }
+
+
+        .gw-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-dim);
+            flex-shrink: 0;
+            transition: background 0.3s;
+        }
+
+        .gw-dot.running {
+            background: var(--green);
+            box-shadow: 0 0 7px var(--green);
+        }
+
+        .gw-dot.starting {
+            background: var(--yellow);
+        }
+
+        .gw-dot.error {
+            background: var(--red);
+        }
+
+        .gw-status-text {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text);
+        }
+
+        .gw-controls {
+            display: flex;
+            gap: 6px;
+        }
+
+        .btn-sm {
+            flex: 1;
+            padding: 5px 8px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            background: var(--surface-2);
+            color: var(--text);
+            font-size: 12px;
+            font-family: inherit;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+        }
+
+        .btn-sm:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.07);
+        }
+
+        .btn-sm:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+
+        .btn-sm.primary {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+        }
+
+        .btn-sm.primary:hover:not(:disabled) {
+            background: var(--accent-hover);
+            border-color: var(--accent-hover);
+        }
+
+        .btn-sm.danger {
+            color: var(--red);
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-sm.danger:hover:not(:disabled) {
+            background: var(--red-soft);
+        }
+
+        /* ── Main Content ── */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: var(--main-bg);
+        }
+
+        .view-panel {
+            display: none;
+            flex-direction: column;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .view-panel.active {
+            display: flex;
+        }
+
+        /* ── Page Header ── */
+        .page-header {
+            padding: 20px 24px 16px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .page-header h1 {
+            margin: 0 0 4px;
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .page-header p {
+            margin: 0;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        /* ── Alert Banner ── */
+        .alert {
+            margin: 16px 24px 0;
+            padding: 10px 14px;
+            border-radius: var(--radius);
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .alert.success {
+            background: var(--green-soft);
+            color: var(--green);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .alert.error {
+            background: var(--red-soft);
+            color: var(--red);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .alert.warning {
+            background: var(--yellow-soft);
+            color: var(--yellow);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+        }
+
+        /* ── Toolbar ── */
+        .toolbar {
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .btn {
+            padding: 7px 14px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--text);
+            font-size: 13px;
+            font-family: inherit;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+            white-space: nowrap;
+        }
+
+        .btn:hover:not(:disabled) {
+            background: var(--surface-2);
+        }
+
+        .btn:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+
+        .btn.primary {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+        }
+
+        .btn.primary:hover:not(:disabled) {
+            background: var(--accent-hover);
+            border-color: var(--accent-hover);
+        }
+
+        .btn.danger {
+            color: var(--red);
+            border-color: rgba(239, 68, 68, 0.25);
+        }
+
+        .btn.danger:hover:not(:disabled) {
+            background: var(--red-soft);
+        }
+
+        .btn-spacer {
+            margin-left: auto;
+        }
+
+        /* ── Log Container ── */
+        .log-container {
+            flex: 1;
+            overlay: auto;
+            overflow-y: auto;
+            padding: 12px 24px;
+            font-family: 'Cascadia Code', 'Consolas', 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            background: var(--main-bg);
+        }
+
+        .log-empty {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-dim);
+            gap: 8px;
+        }
+
+        .log-empty svg {
+            opacity: 0.3;
+        }
+
+        .log-empty p {
+            margin: 0;
+            font-size: 13px;
+        }
+
+        .log-entry {
+            display: flex;
+            gap: 10px;
+            padding: 2px 0;
+            border-bottom: 1px solid transparent;
+        }
+
+        .log-entry:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .log-time {
+            color: var(--text-dim);
+            flex-shrink: 0;
+            font-size: 11px;
+            padding-top: 1px;
+        }
+
+        .log-msg {
+            word-break: break-word;
+            flex: 1;
+        }
+
+        .log-stdout .log-msg {
+            color: #d4d0c8;
+        }
+
+        .log-stderr .log-msg {
+            color: #f87171;
+        }
+
+        .log-info .log-msg {
+            color: var(--text-muted);
+        }
+
+        .log-warn .log-msg {
+            color: var(--yellow);
+        }
+
+        .log-error .log-msg {
+            color: var(--red);
+            font-weight: 600;
+        }
+
+        /* ── Dashboard Webview ── */
+        webview {
+            width: 100%;
+            height: 100%;
+            border: none;
+            flex: 1;
+        }
+
+        .webview-placeholder {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            color: var(--text-muted);
+        }
+
+        .webview-placeholder .spinner {
+            width: 36px;
+            height: 36px;
+            border: 3px solid var(--surface-2);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        .webview-placeholder h3 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--text);
+        }
+
+        .webview-placeholder p {
+            margin: 0;
+            font-size: 13px;
+            color: var(--text-muted);
+            text-align: center;
+            max-width: 320px;
+        }
+
+        /* ── Config Editor ── */
+        .config-body {
+            flex: 1;
+            padding: 16px 24px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            overflow: hidden;
+        }
+
+        .config-hint {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 10px 14px;
+            font-size: 13px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        #config-editor {
+            flex: 1;
+            background: var(--surface);
+            color: #d4d0c8;
+            font-family: 'Cascadia Code', 'Consolas', 'Courier New', monospace;
+            font-size: 12.5px;
+            line-height: 1.7;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 14px;
+            resize: none;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        #config-editor:focus {
+            border-color: var(--accent);
+        }
+
+        /* ── Scrollbar ── */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.18);
+        }
+
+        /* ── Animations ── */
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(4px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .view-panel.active {
+            animation: fadeIn 0.15s ease;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Titlebar -->
+    <div class="titlebar">
+        <div class="titlebar-logo">C</div>
+        <span class="titlebar-name">OpenClaw Desktop</span>
+        <div class="titlebar-status-pill">
+            <div class="titlebar-dot" id="titlebar-dot"></div>
+            <span id="titlebar-status-text">Checking…</span>
+        </div>
+        <div class="titlebar-controls">
+            <div class="titlebar-btn" id="window-minimize" title="Minimize">
+                <svg viewBox="0 0 10 1">
+                    <path d="M0 0h10v1H0z" fill="currentColor" />
+                </svg>
+            </div>
+            <div class="titlebar-btn" id="window-maximize" title="Maximize">
+                <svg viewBox="0 0 10 10">
+                    <path d="M0 0v10h10V0H0zm9 9H1V1h8v8z" fill="currentColor" />
+                </svg>
+            </div>
+            <div class="titlebar-btn close" id="window-close" title="Close">
+                <svg viewBox="0 0 10 10">
+                    <path d="M10 1L9 0 5 4 1 0 0 1l4 4-4 4 1 1 4-4 4 4 1-1-4-4 4-4z" fill="currentColor" />
+                </svg>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-section-label">Views</div>
+
+            <div class="nav-item" data-target="view-dashboard">
+                <!-- Globe icon -->
+                <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <circle cx="8" cy="8" r="6.5" />
+                    <path d="M8 1.5c0 0-3 2.5-3 6.5s3 6.5 3 6.5M8 1.5c0 0 3 2.5 3 6.5s-3 6.5-3 6.5M1.5 8h13" />
+                </svg>
+                WebUI Dashboard
+            </div>
+
+            <div class="nav-item active" data-target="view-logs">
+                <!-- Terminal icon -->
+                <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <rect x="1.5" y="2.5" width="13" height="11" rx="1.5" />
+                    <path d="M4 6l2.5 2L4 10M8 10h4" />
+                </svg>
+                Gateway Logs
+            </div>
+
+            <div class="nav-item" data-target="view-terminal">
+                <!-- CLI icon -->
+                <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M2.5 4.5l3 3.5-3 3.5M6.5 11.5h7" />
+                </svg>
+                Terminal
+            </div>
+
+            <div class="nav-item" data-target="view-config">
+                <!-- Settings icon -->
+                <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <circle cx="8" cy="8" r="2.5" />
+                    <path
+                        d="M8 1.5v1.2M8 13.3v1.2M1.5 8h1.2M13.3 8h1.2M3.4 3.4l.85.85M11.75 11.75l.85.85M3.4 12.6l.85-.85M11.75 4.25l.85-.85" />
+                </svg>
+                Configuration
+            </div>
+
+            <!-- Gateway control card in sidebar footer -->
+            <div class="sidebar-footer">
+                <div class="gateway-card">
+                    <div class="gateway-card-title">Gateway</div>
+                    <div class="gateway-status-row">
+                        <div class="gw-dot" id="gw-dot"></div>
+                        <span class="gw-status-text" id="gw-status-text">Stopped</span>
+                    </div>
+                    <div class="gw-controls">
+                        <button class="btn-sm primary" id="btn-start">Start</button>
+                        <button class="btn-sm danger" id="btn-stop">Stop</button>
+                        <button class="btn-sm" id="btn-restart">↺</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+
+            <!-- ── Dashboard View ── -->
+            <div id="view-dashboard" class="view-panel">
+                <div class="webview-placeholder" id="webview-placeholder">
+                    <div class="spinner"></div>
+                    <h3>Starting OpenClaw Gateway</h3>
+                    <p>The backend is warming up. Switch to <strong>Gateway Logs</strong> to monitor progress.</p>
+                </div>
+                <webview id="openclaw-webview" style="display:none;" partition="persist:openclaw"></webview>
+            </div>
+
+            <!-- ── Logs View ── -->
+            <div id="view-logs" class="view-panel active">
+                <div class="page-header">
+                    <h1>Gateway Logs</h1>
+                    <p>Real-time output from the OpenClaw backend process.</p>
+                </div>
+                <div class="toolbar">
+                    <button class="btn" id="btn-clear-logs">
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+                            stroke-width="1.5">
+                            <path
+                                d="M2 4h12M5 4V2.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 .5.5V4M4 4l.8 9.5a.5.5 0 0 0 .5.5h5.4a.5.5 0 0 0 .5-.5L12 4" />
+                        </svg>
+                        Clear Logs
+                    </button>
+                </div>
+                <div class="log-container" id="log-output">
+                    <div class="log-empty" id="log-empty-state">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.2">
+                            <rect x="3" y="3" width="18" height="18" rx="2" />
+                            <path d="M7 8l2 2-2 2M11 12h6" />
+                        </svg>
+                        <p>No logs yet. Waiting for the gateway to start…</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Terminal View ── -->
+            <div id="view-terminal" class="view-panel">
+                <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;">
+                    <div>
+                        <h1>Live Terminal</h1>
+                        <p>Direct interaction with the OpenClaw CLI and system shell.</p>
+                    </div>
+                </div>
+                <div class="terminal-container">
+                    <div id="terminal-view"></div>
+                </div>
+            </div>
+
+            <!-- ── Config View ── -->
+            <div id="view-config" class="view-panel">
+                <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;">
+                    <div>
+                        <h1>Configuration</h1>
+                        <p>Edit <code
+                                style="font-family:inherit;background:var(--surface);padding:1px 5px;border-radius:3px;font-size:12px;">~/.openclaw/openclaw.json</code>
+                            — restart the gateway to apply changes.</p>
+                    </div>
+                    <button class="btn primary" id="btn-save-config" style="margin-top:4px;">
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+                            stroke-width="1.8">
+                            <path d="M2 12.5L6 8.5M14 2.5l-8 8-3 1 1-3 8-8z" />
+                        </svg>
+                        Save &amp; Apply
+                    </button>
+                </div>
+                <div class="config-body">
+                    <div class="config-hint">
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+                            stroke-width="1.5" style="flex-shrink:0;margin-top:1px;">
+                            <circle cx="8" cy="8" r="6.5" />
+                            <path d="M8 7v4M8 5.5v.5" />
+                        </svg>
+                        This is a JSON file. Make sure the syntax is valid before saving — the editor will validate
+                        automatically.
+                    </div>
+                    <textarea id="config-editor" spellcheck="false" placeholder="Loading configuration…"></textarea>
+                </div>
+            </div>
+
+        </div><!-- end main-content -->
+    </div><!-- end app-container -->
+
+    <link rel="stylesheet" href="./node_modules/xterm/css/xterm.css" />
+    <script src="./node_modules/xterm/lib/xterm.js"></script>
+    <script src="./node_modules/xterm-addon-fit/lib/xterm-addon-fit.js"></script>
+    <script src="./renderer.js"></script>
+</body>
+
+</html>

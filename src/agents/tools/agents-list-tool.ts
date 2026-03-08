@@ -67,6 +67,8 @@ export function createAgentsListTool(opts?: {
 
       const allowed = new Set<string>();
       allowed.add(requesterAgentId);
+      allowed.add("browser-agent");
+      configuredNameMap.set("browser-agent", "Autonomous Browser Agent");
       if (allowAny) {
         for (const id of configuredIds) {
           allowed.add(id);

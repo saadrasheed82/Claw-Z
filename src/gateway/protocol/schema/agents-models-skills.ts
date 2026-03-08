@@ -164,6 +164,33 @@ export const AgentsFilesSetResultSchema = Type.Object(
   { additionalProperties: false },
 );
 
+export const AgentsPlanGetParamsSchema = Type.Object(
+  {
+    agentId: NonEmptyString,
+  },
+  { additionalProperties: false },
+);
+
+export const AgentsPlanGetResultSchema = Type.Object(
+  {
+    agentId: NonEmptyString,
+    plan: Type.Optional(Type.Object({
+      summary: Type.String(),
+      tasks: Type.Array(Type.Object({
+        id: Type.String(),
+        title: Type.String(),
+        status: Type.Union([
+          Type.Literal("todo"),
+          Type.Literal("in_progress"),
+          Type.Literal("done")
+        ])
+      })),
+      updatedAt: Type.String()
+    })),
+  },
+  { additionalProperties: false },
+);
+
 export const ModelsListParamsSchema = Type.Object({}, { additionalProperties: false });
 
 export const ModelsListResultSchema = Type.Object(

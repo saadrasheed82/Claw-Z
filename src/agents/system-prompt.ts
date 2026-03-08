@@ -62,6 +62,26 @@ function buildMemorySection(params: {
   return lines;
 }
 
+function buildPlanSection(params: {
+  isMinimal: boolean;
+  availableTools: Set<string>;
+}) {
+  if (params.isMinimal) {
+    return [];
+  }
+  if (!params.availableTools.has("manage_plan")) {
+    return [];
+  }
+  return [
+    "## Planning and Tasks",
+    "Use manage_plan to create and track your plan. When faced with a complex objective:",
+    "1. Break it down into discrete tasks and record them.",
+    "2. Update the plan as tasks are completed or new ones are discovered.",
+    "3. Check the plan periodically to ensure you are on track.",
+    ""
+  ];
+}
+
 function buildUserIdentitySection(ownerLine: string | undefined, isMinimal: boolean) {
   if (!ownerLine || isMinimal) {
     return [];
@@ -253,6 +273,7 @@ export function buildAgentSystemPrompt(params: {
     canvas: "Present/eval/snapshot the Canvas",
     nodes: "List/describe/notify/camera/screen on paired nodes",
     cron: "Manage cron jobs and wake events (use for reminders; when scheduling a reminder, write the systemEvent text as something that will read like a reminder when it fires, and mention that it is a reminder depending on the time gap between setting and firing; include recent context in reminder text if appropriate)",
+    manage_plan: "Create or update the agent's active plan and todo list. Use this to break down complex objectives and track your progress.",
     message: "Send messages and channel actions",
     gateway: "Restart, apply config, or run updates on the running OpenClaw process",
     agents_list: acpSpawnRuntimeEnabled
@@ -286,6 +307,7 @@ export function buildAgentSystemPrompt(params: {
     "canvas",
     "nodes",
     "cron",
+    "manage_plan",
     "message",
     "gateway",
     "agents_list",
@@ -438,6 +460,7 @@ export function buildAgentSystemPrompt(params: {
           "- canvas: present/eval/snapshot the Canvas",
           "- nodes: list/describe/notify/camera/screen on paired nodes",
           "- cron: manage cron jobs and wake events (use for reminders; when scheduling a reminder, write the systemEvent text as something that will read like a reminder when it fires, and mention that it is a reminder depending on the time gap between setting and firing; include recent context in reminder text if appropriate)",
+          "- manage_plan: maintain an execution plan and todo list",
           "- sessions_list: list sessions",
           "- sessions_history: fetch session history",
           "- sessions_send: send to another session",
@@ -446,7 +469,7 @@ export function buildAgentSystemPrompt(params: {
         ].join("\n"),
     "TOOLS.md does not control tool availability; it is user guidance for how to use external tools.",
     `For long waits, avoid rapid poll loops: use ${execToolName} with enough yieldMs or ${processToolName}(action=poll, timeout=<ms>).`,
-    "If a task is more complex or takes longer, spawn a sub-agent. Completion is push-based: it will auto-announce when done.",
+    "For complex web navigation, browsing, or info retrieval: YOU ARE REQUIRED to use `sessions_spawn` with `agentId=\"browser-agent\"`. This is your primary tool for web tasks. Do not answer from static memory when live browsing is requested. Do not tell the user to do it manually; you have the tool. Once spawned, wait for the auto-announcement; do not use `sessions_send` for the initial request.",
     ...(acpHarnessSpawnAllowed
       ? [
           'For requests like "do this in codex/claude code/gemini", treat it as ACP harness intent and call `sessions_spawn` with `runtime: "acp"`.',
@@ -475,6 +498,7 @@ export function buildAgentSystemPrompt(params: {
     "If unsure, ask the user to run `openclaw help` (or `openclaw gateway --help`) and paste the output.",
     "",
     ...skillsSection,
+    ...buildPlanSection({ isMinimal, availableTools }),
     ...memorySection,
     // Skip self-update for subagent/none modes
     hasGateway && !isMinimal ? "## OpenClaw Self-Update" : "",

@@ -404,9 +404,10 @@ describe("createOpenClawCodingTools", () => {
     const names = new Set(tools.map((tool) => tool.name));
     expect(names.has("message")).toBe(true);
     expect(names.has("sessions_send")).toBe(true);
-    expect(names.has("sessions_spawn")).toBe(false);
+    expect(names.has("sessions_spawn")).toBe(true);
     expect(names.has("exec")).toBe(false);
-    expect(names.has("browser")).toBe(false);
+    expect(names.has("browser")).toBe(true);
+    expect(names.has("autonomous_browser")).toBe(true);
   });
   it("expands group shorthands in global tool policy", () => {
     const tools = createOpenClawCodingTools({
@@ -443,6 +444,7 @@ describe("createOpenClawCodingTools", () => {
     expect(names.has("message")).toBe(true);
     expect(names.has("exec")).toBe(false);
     expect(names.has("read")).toBe(false);
+    expect(names.has("browser")).toBe(true);
   });
   it("removes unsupported JSON Schema keywords for Cloud Code Assist API compatibility", () => {
     const googleTools = createOpenClawCodingTools({
