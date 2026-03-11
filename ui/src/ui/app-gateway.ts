@@ -13,7 +13,7 @@ import {
 import { handleAgentEvent, resetToolStream, type AgentEventPayload } from "./app-tool-stream.ts";
 import type { OpenClawApp } from "./app.ts";
 import { shouldReloadHistoryForFinalEvent } from "./chat-event-reload.ts";
-import { loadAgents, loadToolsCatalog } from "./controllers/agents.ts";
+import { loadAgents, loadToolsCatalog, loadAvailableModels } from "./controllers/agents.ts";
 import { loadAssistantIdentity } from "./controllers/assistant-identity.ts";
 import { loadChatHistory } from "./controllers/chat.ts";
 import { handleChatEvent, type ChatEventPayload } from "./controllers/chat.ts";
@@ -202,6 +202,7 @@ export function connectGateway(host: GatewayHost) {
       resetToolStream(host as unknown as Parameters<typeof resetToolStream>[0]);
       void loadAssistantIdentity(host as unknown as OpenClawApp);
       void loadAgents(host as unknown as OpenClawApp);
+      void loadAvailableModels(host as unknown as OpenClawApp);
       void loadToolsCatalog(host as unknown as OpenClawApp);
       void loadNodes(host as unknown as OpenClawApp, { quiet: true });
       void loadDevices(host as unknown as OpenClawApp, { quiet: true });
@@ -363,11 +364,11 @@ function handleGatewayEventUnsafe(host: GatewayHost, evt: GatewayEventFrame) {
 export function applySnapshot(host: GatewayHost, hello: GatewayHelloOk) {
   const snapshot = hello.snapshot as
     | {
-        presence?: PresenceEntry[];
-        health?: HealthSnapshot;
-        sessionDefaults?: SessionDefaultsSnapshot;
-        updateAvailable?: UpdateAvailable;
-      }
+      presence?: PresenceEntry[];
+      health?: HealthSnapshot;
+      sessionDefaults?: SessionDefaultsSnapshot;
+      updateAvailable?: UpdateAvailable;
+    }
     | undefined;
   if (snapshot?.presence && Array.isArray(snapshot.presence)) {
     host.presenceEntries = snapshot.presence;

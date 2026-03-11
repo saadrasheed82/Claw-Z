@@ -228,6 +228,7 @@ export class OpenClawApp extends LitElement {
 
   @state() agentsLoading = false;
   @state() agentsList: AgentsListResult | null = null;
+  @state() availableModels: any[] = [];
   @state() agentsError: string | null = null;
   @state() agentsSelectedId: string | null = null;
   @state() toolsCatalogLoading = false;

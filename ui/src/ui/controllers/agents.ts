@@ -62,3 +62,17 @@ export async function loadToolsCatalog(state: AgentsState, agentId?: string | nu
     state.toolsCatalogLoading = false;
   }
 }
+
+export async function loadAvailableModels(state: any) {
+  if (!state.client || !state.connected) {
+    return;
+  }
+  try {
+    const res = await state.client.request("models.list", {});
+    if (res && res.models) {
+      state.availableModels = res.models;
+    }
+  } catch (err) {
+    console.error("Failed to load available models:", err);
+  }
+}

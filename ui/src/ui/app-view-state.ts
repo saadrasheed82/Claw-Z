@@ -129,6 +129,7 @@ export type AppViewState = {
   presenceStatus: string | null;
   agentsLoading: boolean;
   agentsList: AgentsListResult | null;
+  availableModels: any[];
   agentsError: string | null;
   agentsSelectedId: string | null;
   toolsCatalogLoading: boolean;
