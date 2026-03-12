@@ -143,6 +143,10 @@
             opacity: 0.9;
             letter-spacing: -0.01em;
             margin-right: 16px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 160px;
         }
 
         .titlebar-right {
@@ -655,6 +659,36 @@
         .view-panel.active {
             animation: fadeIn 0.15s ease;
         }
+
+        /* ── Responsive Titlebar ── */
+        @media (max-width: 1000px) {
+            .gateway-card-title {
+                display: none;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .nav-item {
+                padding: 6px 8px;
+            }
+            /* Robust way to hide text in nav-item but keep icon */
+            .nav-item {
+                font-size: 0;
+                gap: 0;
+                width: 36px;
+                justify-content: center;
+            }
+            .nav-icon {
+                margin: 0;
+            }
+        }
+
+        @media (max-width: 750px) {
+            .gateway-card {
+                display: none;
+            }
+        }
+
     </style>
 </head>
 
