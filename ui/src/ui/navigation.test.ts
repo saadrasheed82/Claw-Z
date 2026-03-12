@@ -34,7 +34,6 @@ describe("iconForTab", () => {
     expect(iconForTab("cron")).toBe("loader");
     expect(iconForTab("skills")).toBe("zap");
     expect(iconForTab("nodes")).toBe("monitor");
-    expect(iconForTab("config")).toBe("settings");
     expect(iconForTab("debug")).toBe("bug");
     expect(iconForTab("logs")).toBe("scrollText");
   });
@@ -72,7 +71,6 @@ describe("subtitleForTab", () => {
 
   it("returns descriptive subtitles", () => {
     expect(subtitleForTab("chat")).toContain("chat session");
-    expect(subtitleForTab("config")).toContain("openclaw.json");
   });
 });
 

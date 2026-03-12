@@ -102,9 +102,9 @@
 }
 
 .chat-avatar.user {
-  background: var(--accent);
-  color: #fff;
-  border-color: var(--accent);
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border-color: transparent;
 }
 
 .chat-avatar.assistant {
@@ -129,23 +129,17 @@ img.chat-avatar {
   object-position: center;
 }
 
-/* Claude Desktop Style Bubbles */
+/* Shadcn Style Bubbles */
 .chat-bubble {
   position: relative;
   display: inline-block;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  /* Softer, more conversational radius */
-  padding: 14px 18px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  /* Gentle outer shadow */
+  background: var(--muted);
+  color: var(--text);
+  border: none;
+  border-radius: var(--radius-xl);
+  padding: 12px 16px;
   max-width: 100%;
   word-wrap: break-word;
-  transition:
-    background 150ms ease-out,
-    border-color 150ms ease-out,
-    box-shadow 150ms ease-out;
 }
 
 .chat-bubble.has-copy {
@@ -252,30 +246,49 @@ img.chat-avatar {
   }
 }
 
-/* Light mode: restore borders */
-:root[data-theme="light"] .chat-bubble {
-  border-color: var(--border);
-  box-shadow: inset 0 1px 0 var(--card-highlight);
-}
-
-.chat-bubble:hover {
-  background: var(--bg-hover);
-}
-
 /* User bubbles have different styling */
 .chat-group.user .chat-bubble {
-  background: var(--accent-subtle);
-  border-color: var(--accent);
-  color: var(--text-strong);
+  background: var(--primary);
+  color: var(--primary-foreground) !important;
 }
 
-:root[data-theme="light"] .chat-group.user .chat-bubble {
-  border-color: var(--accent);
-  background: var(--accent-subtle);
+/* Enforce foreground color for all text elements within user bubbles */
+.chat-group.user .chat-bubble .chat-text,
+.chat-group.user .chat-bubble .chat-text p,
+.chat-group.user .chat-bubble .chat-text ul,
+.chat-group.user .chat-bubble .chat-text ol,
+.chat-group.user .chat-bubble .chat-text li,
+.chat-group.user .chat-bubble .chat-text strong,
+.chat-group.user .chat-bubble .chat-text em {
+  color: var(--primary-foreground) !important;
+}
+
+.chat-group.user .chat-bubble .chat-text blockquote {
+  border-left: 2px solid var(--primary-foreground);
+  color: var(--primary-foreground) !important;
+  opacity: 0.9;
+}
+
+.chat-group.user .chat-bubble .chat-text a {
+  color: var(--primary-foreground);
+  text-decoration: underline;
+  opacity: 0.9;
+}
+
+/* Neutral transparent background for code blocks works on both light/dark */
+.chat-group.user .chat-bubble .chat-text :where(pre, :not(pre) > code) {
+  background: rgba(0, 0, 0, 0.1);
+  color: var(--primary-foreground) !important;
+}
+
+.chat-group.user .chat-bubble .chat-text :where(blockquote) {
+  border-color: var(--primary-foreground);
+  opacity: 0.8;
+  background: rgba(128, 128, 128, 0.1);
 }
 
 .chat-group.user .chat-bubble:hover {
-  background: var(--accent-active, rgba(173, 137, 255, 0.18));
+  opacity: 0.95;
 }
 
 /* Streaming animation */

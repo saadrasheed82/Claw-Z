@@ -403,17 +403,17 @@
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  background: var(--panel);
+  background: var(--card);
   border: 1px solid var(--border);
   box-shadow: var(--shadow-sm);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   flex: 1;
   transition: border-color var(--duration-fast) ease, box-shadow var(--duration-fast) ease;
 }
 
 .chat-compose__row:focus-within {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 1px var(--accent-subtle), var(--shadow-md);
+  border-color: var(--ring);
+  box-shadow: var(--focus-ring);
 }
 
 /* Reset .field textarea */

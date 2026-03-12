@@ -6,7 +6,6 @@ const viewPanels = document.querySelectorAll('.view-panel');
 const logOutput = document.getElementById('log-output');
 const logEmptyState = document.getElementById('log-empty-state');
 const webview = document.getElementById('openclaw-webview');
-const configEditor = document.getElementById('config-editor');
 const webviewPlaceholder = document.getElementById('webview-placeholder');
 
 // Status indicators
@@ -20,7 +19,6 @@ const btnStart = document.getElementById('btn-start');
 const btnStop = document.getElementById('btn-stop');
 const btnRestart = document.getElementById('btn-restart');
 const btnClearLogs = document.getElementById('btn-clear-logs');
-const btnSaveConfig = document.getElementById('btn-save-config');
 
 // Window controls
 const winMinimize = document.getElementById('window-minimize');
@@ -40,7 +38,6 @@ navItems.forEach(item => {
         item.classList.add('active');
         const targetId = item.getAttribute('data-target');
         document.getElementById(targetId).classList.add('active');
-        if (targetId === 'view-config') loadConfig();
     });
 });
 
@@ -105,42 +102,6 @@ api.onGatewayReady((url) => {
     }
 });
 
-// ── Config Editor ──
-async function loadConfig() {
-    configEditor.value = await api.getConfig();
-}
-
-btnSaveConfig.addEventListener('click', async () => {
-    try {
-        JSON.parse(configEditor.value); // validate JSON
-        btnSaveConfig.innerText = 'Saving…';
-        btnSaveConfig.disabled = true;
-
-        const result = await api.saveConfig(configEditor.value);
-
-        if (result.success) {
-            btnSaveConfig.innerText = '✓ Saved';
-            setTimeout(() => {
-                btnSaveConfig.innerHTML = `
-                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8">
-                        <path d="M2 12.5L6 8.5M14 2.5l-8 8-3 1 1-3 8-8z"/>
-                    </svg> Save &amp; Apply`;
-                btnSaveConfig.disabled = false;
-            }, 2000);
-            if (confirm('Configuration saved. Restart the gateway to apply changes?')) {
-                api.restartGateway();
-            }
-        } else {
-            alert('Failed to save: ' + result.error);
-            btnSaveConfig.innerText = 'Save & Apply';
-            btnSaveConfig.disabled = false;
-        }
-    } catch (e) {
-        alert('Invalid JSON — please fix the syntax error before saving.\n\n' + e.message);
-        btnSaveConfig.innerText = 'Save & Apply';
-        btnSaveConfig.disabled = false;
-    }
-});
 
 // ── Gateway Controls ──
 btnStart.addEventListener('click', () => {
@@ -263,7 +224,6 @@ navItems.forEach(item => {
         const targetId = item.getAttribute('data-target');
         document.getElementById(targetId).classList.add('active');
         
-        if (targetId === 'view-config') loadConfig();
         if (targetId === 'view-terminal') {
             initTerminal();
             setTimeout(() => {

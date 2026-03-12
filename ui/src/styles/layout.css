@@ -79,10 +79,11 @@
   z-index: 40;
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   gap: 16px;
   padding: 0 16px;
   height: var(--shell-topbar-height);
+  width: 100%;
   border-bottom: 1px solid var(--border);
   background: var(--bg);
   transition: background var(--duration-normal) ease;
